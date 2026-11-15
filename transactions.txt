@@ -1,0 +1,10 @@
+# Personal Finance & Expense Management System Data File
+# Format: ID|TYPE|TITLE|AMOUNT|CATEGORY|DATE|NOTES|SPECIFIC_DETAIL
+TXN-101|INCOME|Monthly Job Salary|4500.00|Salary|2026-11-01|Full-time software role|Corporate Payroll
+TXN-102|INCOME|Web Freelance Project|850.00|Freelance|2026-11-05|Client website design|Upwork
+TXN-103|EXPENSE|Apartment Electricity & Water|145.00|Bills|2026-11-02|Monthly utility bill|Online Banking
+TXN-104|EXPENSE|Weekly Grocery & Supermarket|165.50|Food|2026-11-04|Vegetables, dairy, snacks|Credit Card
+TXN-105|EXPENSE|Online Programming Course|89.99|Education|2026-11-07|Java & Web dev bootcamp|Debit Card
+TXN-106|EXPENSE|Metro Train Monthly Pass|60.00|Travel|2026-11-09|Daily transit card reload|UPI
+TXN-107|EXPENSE|Winter Jacket & Sneakers|120.00|Shopping|2026-11-11|Seasonal clothing mall purchase|Credit Card
+TXN-108|EXPENSE|Italian Restaurant Dinner|54.50|Food|2026-11-13|Weekend dinner with friends|Cash

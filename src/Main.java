@@ -1,0 +1,438 @@
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Executors;
+
+/**
+ * ============================================================================
+ * MAIN APPLICATION: BASIC JAVA HTTP SERVER
+ * ============================================================================
+ * 
+ * Uses standard Java built-in HttpServer (com.sun.net.httpserver.HttpServer).
+ * No external frameworks (like Spring Boot) are required.
+ * Serves the HTML, CSS, JavaScript frontend and exposes simple REST APIs.
+ */
+public class Main {
+    private static int PORT = 8080;
+    private static final String DATA_FILE = "transactions.txt";
+    private static final String WEB_DIR = "web";
+
+    // References to our FinanceManager and FileManager
+    private final FinanceManager financeManager;
+    private final FileManager fileManager;
+
+    public Main() {
+        this.fileManager = new FileManager(DATA_FILE);
+        this.financeManager = new FinanceManager(fileManager);
+    }
+
+    public static void main(String[] args) {
+        Main app = new Main();
+
+        // Support quick terminal summary flag
+        if (args.length > 0 && "--summary".equalsIgnoreCase(args[0])) {
+            app.printTerminalSummary();
+            return;
+        }
+
+        app.startServer();
+    }
+
+    /**
+     * Starts the built-in Java HTTP Server
+     */
+    public void startServer() {
+        HttpServer server = null;
+        int[] candidatePorts = {PORT, 8081, 8082, 8000, 9000};
+        
+        for (int p : candidatePorts) {
+            try {
+                server = HttpServer.create(new InetSocketAddress(p), 0);
+                PORT = p;
+                break;
+            } catch (IOException e) {
+                // Try next candidate port
+            }
+        }
+
+        if (server == null) {
+            System.err.println("Could not bind HTTP server to any available port.");
+            return;
+        }
+
+        try {
+            server.setExecutor(Executors.newFixedThreadPool(6));
+
+            // Static Web Page Routing
+            server.createContext("/", new StaticFileHandler());
+
+            // REST API Endpoints
+            server.createContext("/api/summary", new SummaryHandler());
+            server.createContext("/api/transactions", new TransactionsHandler());
+            server.createContext("/api/delete", new DeleteHandler());
+            server.createContext("/api/reset", new ResetHandler());
+            server.createContext("/api/export", new ExportHandler());
+
+            server.start();
+
+            printBanner();
+
+        } catch (Exception e) {
+            System.err.println("Error configuring server: " + e.getMessage());
+        }
+    }
+
+    private void printBanner() {
+        System.out.println("=================================================================");
+        System.out.println("   PERSONAL FINANCE & EXPENSE MANAGEMENT SYSTEM (JAVA)");
+        System.out.println("=================================================================");
+        System.out.println(" Web Server URL:  http://localhost:" + PORT);
+        System.out.println(" Data Storage:    " + new File(DATA_FILE).getAbsolutePath());
+        System.out.println(" Server Status:   RUNNING (Press Ctrl+C to stop)");
+        System.out.println("-----------------------------------------------------------------");
+        System.out.printf(" Total Income:    $%,10.2f%n", financeManager.getTotalIncome());
+        System.out.printf(" Total Expenses:  $%,10.2f%n", financeManager.getTotalExpenses());
+        System.out.printf(" Current Balance: $%,10.2f%n", financeManager.getCurrentBalance());
+        System.out.printf(" Total Records:   %d transactions%n", financeManager.getAllTransactions().size());
+        System.out.println("=================================================================");
+    }
+
+    public void printTerminalSummary() {
+        System.out.println("=== Personal Finance Summary ===");
+        System.out.printf("Total Income:    $%.2f%n", financeManager.getTotalIncome());
+        System.out.printf("Total Expenses:  $%.2f%n", financeManager.getTotalExpenses());
+        System.out.printf("Current Balance: $%.2f%n", financeManager.getCurrentBalance());
+        System.out.println("Expense Categories:");
+        HashMap<String, Double> cats = financeManager.getExpenseByCategory();
+        for (Map.Entry<String, Double> e : cats.entrySet()) {
+            System.out.printf(" - %-12s: $%.2f%n", e.getKey(), e.getValue());
+        }
+    }
+
+    // ========================================================================
+    // HTTP HANDLER: Static Web Files (HTML, CSS, JS)
+    // ========================================================================
+    private class StaticFileHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            if (path == null || path.equals("/") || path.isEmpty()) {
+                path = "/index.html";
+            }
+
+            // Security: Prevent directory traversal
+            if (path.contains("..")) {
+                sendText(exchange, 403, "Forbidden");
+                return;
+            }
+
+            File file = new File(WEB_DIR, path.startsWith("/") ? path.substring(1) : path);
+            if (!file.exists() || file.isDirectory()) {
+                sendText(exchange, 404, "File Not Found");
+                return;
+            }
+
+            String mimeType = getMimeType(file.getName());
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            exchange.getResponseHeaders().set("Content-Type", mimeType);
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
+            }
+        }
+
+        private String getMimeType(String name) {
+            if (name.endsWith(".html")) return "text/html; charset=UTF-8";
+            if (name.endsWith(".css")) return "text/css; charset=UTF-8";
+            if (name.endsWith(".js")) return "application/javascript; charset=UTF-8";
+            if (name.endsWith(".json")) return "application/json; charset=UTF-8";
+            if (name.endsWith(".svg")) return "image/svg+xml";
+            if (name.endsWith(".png")) return "image/png";
+            return "text/plain; charset=UTF-8";
+        }
+    }
+
+    // ========================================================================
+    // HTTP HANDLER: Dashboard Summary (/api/summary)
+    // ========================================================================
+    private class SummaryHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            addCorsHeaders(exchange);
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            String json = financeManager.getSummaryJson();
+            sendJson(exchange, 200, json);
+        }
+    }
+
+    // ========================================================================
+    // HTTP HANDLER: Transactions (/api/transactions)
+    // Supports GET (List/Filter), POST (Add), DELETE (Delete)
+    // ========================================================================
+    private class TransactionsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            addCorsHeaders(exchange);
+            String method = exchange.getRequestMethod().toUpperCase();
+
+            if ("OPTIONS".equals(method)) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("GET".equals(method)) {
+                // Feature: List & Filter transactions
+                Map<String, String> query = parseQuery(exchange.getRequestURI().getRawQuery());
+                String type = query.getOrDefault("type", "ALL");
+                String category = query.getOrDefault("category", "ALL");
+                String search = query.getOrDefault("search", "");
+
+                ArrayList<Transaction> list = financeManager.filterTransactions(type, category, search);
+                String json = financeManager.getTransactionsJson(list);
+                sendJson(exchange, 200, json);
+
+            } else if ("POST".equals(method)) {
+                // Features 2 & 3: Add Income or Add Expense
+                String body = readRequestBody(exchange);
+                Map<String, String> data = parseSimpleJson(body);
+
+                String type = data.getOrDefault("type", "EXPENSE").toUpperCase();
+                String title = data.getOrDefault("title", "Untitled");
+                double amount = 0.0;
+                try {
+                    amount = Double.parseDouble(data.getOrDefault("amount", "0"));
+                } catch (NumberFormatException ignored) {}
+
+                String category = data.getOrDefault("category", "Food");
+                String date = data.getOrDefault("date", java.time.LocalDate.now().toString());
+                String notes = data.getOrDefault("notes", "");
+                String detail = data.getOrDefault("detail", "");
+
+                String id = data.get("id");
+                if (id == null || id.trim().isEmpty()) {
+                    id = "TXN-" + System.currentTimeMillis() % 1000000;
+                }
+
+                Transaction t;
+                if ("INCOME".equalsIgnoreCase(type)) {
+                    // Polymorphic instantiation of Income
+                    t = new Income(id, title, amount, category, date, notes, detail.isEmpty() ? "Salary" : detail);
+                } else {
+                    // Polymorphic instantiation of Expense
+                    t = new Expense(id, title, amount, category, date, notes, detail.isEmpty() ? "Cash" : detail);
+                }
+
+                boolean added = financeManager.addTransaction(t);
+                if (added) {
+                    sendJson(exchange, 201, t.toJson());
+                } else {
+                    sendJson(exchange, 400, "{\"error\":\"Could not add transaction\"}");
+                }
+
+            } else if ("DELETE".equals(method)) {
+                // Feature 6: Delete transaction
+                Map<String, String> query = parseQuery(exchange.getRequestURI().getRawQuery());
+                String id = query.get("id");
+                if (id != null && financeManager.deleteTransaction(id)) {
+                    sendJson(exchange, 200, "{\"success\":true,\"id\":\"" + id + "\"}");
+                } else {
+                    sendJson(exchange, 404, "{\"error\":\"Transaction not found\"}");
+                }
+            } else {
+                sendJson(exchange, 405, "{\"error\":\"Method not allowed\"}");
+            }
+        }
+    }
+
+    // ========================================================================
+    // HTTP HANDLER: Delete by query or POST (/api/delete)
+    // ========================================================================
+    private class DeleteHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            addCorsHeaders(exchange);
+            Map<String, String> query = parseQuery(exchange.getRequestURI().getRawQuery());
+            String id = query.get("id");
+
+            if (id != null && financeManager.deleteTransaction(id)) {
+                sendJson(exchange, 200, "{\"success\":true,\"id\":\"" + id + "\"}");
+            } else {
+                sendJson(exchange, 400, "{\"error\":\"Invalid transaction ID\"}");
+            }
+        }
+    }
+
+    // ========================================================================
+    // HTTP HANDLER: Reset sample data (/api/reset)
+    // ========================================================================
+    private class ResetHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            addCorsHeaders(exchange);
+            new File(DATA_FILE).delete();
+            fileManager.seedDefaultTransactions();
+            financeManager.loadData();
+            sendJson(exchange, 200, "{\"message\":\"Sample data reset successfully\"}");
+        }
+    }
+
+    // ========================================================================
+    // HTTP HANDLER: Export CSV file (/api/export)
+    // ========================================================================
+    private class ExportHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            addCorsHeaders(exchange);
+            StringBuilder csv = new StringBuilder();
+            csv.append("ID,Type,Title,Amount,Category,Date,Notes,Detail\n");
+
+            for (Transaction t : financeManager.getAllTransactions()) {
+                csv.append(String.format("\"%s\",\"%s\",\"%s\",%.2f,\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                        t.getId(),
+                        t.getType(),
+                        t.getTitle().replace("\"", "\"\""),
+                        t.getAmount(),
+                        t.getCategory().replace("\"", "\"\""),
+                        t.getDate(),
+                        t.getNotes().replace("\"", "\"\""),
+                        t.getSpecificDetail().replace("\"", "\"\"")
+                ));
+            }
+
+            byte[] bytes = csv.toString().getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "text/csv; charset=UTF-8");
+            exchange.getResponseHeaders().set("Content-Disposition", "attachment; filename=\"transactions.csv\"");
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
+            }
+        }
+    }
+
+    // ========================================================================
+    // HELPER METHODS
+    // ========================================================================
+    private static void sendJson(HttpExchange exchange, int status, String json) throws IOException {
+        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
+        exchange.sendResponseHeaders(status, bytes.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
+    }
+
+    private static void sendText(HttpExchange exchange, int status, String text) throws IOException {
+        byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+        exchange.sendResponseHeaders(status, bytes.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
+    }
+
+    private static void addCorsHeaders(HttpExchange exchange) {
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+    }
+
+    private static String readRequestBody(HttpExchange exchange) throws IOException {
+        try (InputStream is = exchange.getRequestBody();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, read);
+            }
+            return baos.toString(StandardCharsets.UTF_8.name());
+        }
+    }
+
+    private static Map<String, String> parseQuery(String query) {
+        Map<String, String> map = new HashMap<>();
+        if (query == null || query.isEmpty()) return map;
+
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            int idx = pair.indexOf("=");
+            try {
+                if (idx > 0 && idx < pair.length() - 1) {
+                    String k = URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8.name());
+                    String v = URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8.name());
+                    map.put(k, v);
+                } else if (idx > 0) {
+                    String k = URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8.name());
+                    map.put(k, "");
+                }
+            } catch (Exception ignored) {}
+        }
+        return map;
+    }
+
+    private static Map<String, String> parseSimpleJson(String json) {
+        Map<String, String> map = new HashMap<>();
+        if (json == null || json.trim().isEmpty()) return map;
+
+        String s = json.trim();
+        if (s.startsWith("{")) s = s.substring(1);
+        if (s.endsWith("}")) s = s.substring(0, s.length() - 1);
+
+        boolean inQuotes = false;
+        StringBuilder key = new StringBuilder();
+        StringBuilder val = new StringBuilder();
+        boolean readingKey = true;
+
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            if (c == '\"') {
+                inQuotes = !inQuotes;
+                continue;
+            }
+
+            if (!inQuotes && c == ':') {
+                readingKey = false;
+                continue;
+            }
+
+            if (!inQuotes && c == ',') {
+                String k = key.toString().trim();
+                String v = val.toString().trim();
+                if (!k.isEmpty()) {
+                    map.put(k, v);
+                }
+                key.setLength(0);
+                val.setLength(0);
+                readingKey = true;
+                continue;
+            }
+
+            if (readingKey) {
+                key.append(c);
+            } else {
+                val.append(c);
+            }
+        }
+
+        String k = key.toString().trim();
+        String v = val.toString().trim();
+        if (!k.isEmpty()) {
+            map.put(k, v);
+        }
+
+        return map;
+    }
+}

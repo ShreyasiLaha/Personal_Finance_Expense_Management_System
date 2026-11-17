@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * ============================================================================
@@ -429,55 +431,20 @@ public class Main {
 
     private static Map<String, String> parseSimpleJson(String json) {
         Map<String, String> map = new HashMap<>();
-        if (json == null || json.trim().isEmpty()) return map;
-
-        String s = json.trim();
-        if (s.startsWith("{")) s = s.substring(1);
-        if (s.endsWith("}")) s = s.substring(0, s.length() - 1);
-
-        boolean inQuotes = false;
-        StringBuilder key = new StringBuilder();
-        StringBuilder val = new StringBuilder();
-        boolean readingKey = true;
-
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-
-            if (c == '\"') {
-                inQuotes = !inQuotes;
-                continue;
-            }
-
-            if (!inQuotes && c == ':') {
-                readingKey = false;
-                continue;
-            }
-
-            if (!inQuotes && c == ',') {
-                String k = key.toString().trim();
-                String v = val.toString().trim();
-                if (!k.isEmpty()) {
-                    map.put(k, v);
-                }
-                key.setLength(0);
-                val.setLength(0);
-                readingKey = true;
-                continue;
-            }
-
-            if (readingKey) {
-                key.append(c);
-            } else {
-                val.append(c);
-            }
+        if (json == null || json.trim().isEmpty()) {
+            return map;
         }
 
-        String k = key.toString().trim();
-        String v = val.toString().trim();
-        if (!k.isEmpty()) {
-            map.put(k, v);
+        // Clean, standard regex-based JSON key-value parser (no complex escaping or char indexing)
+        Pattern pattern = Pattern.compile("\"([^\"]+)\"\\s*:\\s*(?:\"([^\"]*)\"|([0-9.-]+|true|false))");
+        Matcher matcher = pattern.matcher(json);
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            String val = matcher.group(2) != null ? matcher.group(2) : matcher.group(3);
+            if (key != null && val != null) {
+                map.put(key.trim(), val.trim());
+            }
         }
-
         return map;
     }
 }

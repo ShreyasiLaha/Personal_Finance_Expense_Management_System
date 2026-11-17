@@ -111,8 +111,49 @@ document.addEventListener("DOMContentLoaded", () => {
     const budgetLimitInput = document.getElementById("budgetLimitInput");
     const budgetCardsGrid = document.getElementById("budgetCardsGrid");
 
+    // Savings Goal Tracker DOM References
+    const sidebarGoalsBadge = document.getElementById("sidebarGoalsBadge");
+    const dashGoalsBanner = document.getElementById("dashGoalsBanner");
+    const dashGoalsProgressText = document.getElementById("dashGoalsProgressText");
+    const dashGoalsPctText = document.getElementById("dashGoalsPctText");
+    const dashGoalsBarFill = document.getElementById("dashGoalsBarFill");
+    const dashViewGoalsBtn = document.getElementById("dashViewGoalsBtn");
+    const openCreateGoalBtn = document.getElementById("openCreateGoalBtn");
+    const closeGoalFormBtn = document.getElementById("closeGoalFormBtn");
+    const cancelGoalFormBtn = document.getElementById("cancelGoalFormBtn");
+    const goalFormWrapper = document.getElementById("goalFormWrapper");
+    const saveGoalForm = document.getElementById("saveGoalForm");
+    const goalFormHeaderTitle = document.getElementById("goalFormHeaderTitle");
+    const submitGoalBtn = document.getElementById("submitGoalBtn");
+    const goalEditId = document.getElementById("goalEditId");
+    const goalNameInput = document.getElementById("goalNameInput");
+    const goalCategorySelect = document.getElementById("goalCategorySelect");
+    const goalTargetInput = document.getElementById("goalTargetInput");
+    const goalSavedInput = document.getElementById("goalSavedInput");
+    const goalTargetDateInput = document.getElementById("goalTargetDateInput");
+    const goalsTotalCount = document.getElementById("goalsTotalCount");
+    const goalsAchievedCount = document.getElementById("goalsAchievedCount");
+    const goalsTotalSaved = document.getElementById("goalsTotalSaved");
+    const goalsOverallProgress = document.getElementById("goalsOverallProgress");
+    const goalsCardsGrid = document.getElementById("goalsCardsGrid");
+
+    // Deposit Modal References
+    const addSavingsModal = document.getElementById("addSavingsModal");
+    const modalGoalTitle = document.getElementById("modalGoalTitle");
+    const modalGoalSubtitle = document.getElementById("modalGoalSubtitle");
+    const depositGoalId = document.getElementById("depositGoalId");
+    const depositAmountInput = document.getElementById("depositAmountInput");
+    const closeSavingsModalBtn = document.getElementById("closeSavingsModalBtn");
+    const cancelSavingsModalBtn = document.getElementById("cancelSavingsModalBtn");
+    const depositSavingsForm = document.getElementById("depositSavingsForm");
+
     // Default Date to today
     formDate.value = new Date().toISOString().split("T")[0];
+    if (goalTargetDateInput) {
+        const d = new Date();
+        d.setMonth(d.getMonth() + 6);
+        goalTargetDateInput.value = d.toISOString().split("T")[0];
+    }
 
     // ------------------------------------------------------------------------
     // THEME SWITCHER (Teal, Dark, Indigo, Ocean)
@@ -190,6 +231,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 pageHeading.textContent = "Budget Alert & Control Center";
                 pageSubheading.textContent = "Set category spending limits and monitor automated budget alerts.";
                 break;
+            case "section-goals":
+                pageHeading.textContent = "Savings Goal Tracker";
+                pageSubheading.textContent = "Track targets, log savings deposits, and celebrate your financial milestones.";
+                loadSavingsGoals();
+                break;
         }
 
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -206,6 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
     quickAddBtn.addEventListener("click", () => navigateToSection("section-add"));
     viewAllBtn.addEventListener("click", () => navigateToSection("section-history"));
     if (bannerManageBudgetsBtn) bannerManageBudgetsBtn.addEventListener("click", () => navigateToSection("section-budgets"));
+    if (dashViewGoalsBtn) dashViewGoalsBtn.addEventListener("click", () => navigateToSection("section-goals"));
 
     // ------------------------------------------------------------------------
     // SCREEN SWITCHING (Full Landing Screen <-> App Screen)
@@ -331,6 +378,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Render Budget Alerts in Section 5 & Dashboard Alert Banner
             renderBudgetCards(data.budgetSummary || []);
+
+            // Update Savings Goal Spotlight & Badge
+            if (data.savingsGoalSummary) {
+                const s = data.savingsGoalSummary;
+                if (sidebarGoalsBadge) sidebarGoalsBadge.textContent = s.totalGoals || 0;
+                if (dashGoalsProgressText) dashGoalsProgressText.textContent = `${s.achievedGoals || 0} of ${s.totalGoals || 0} Achieved`;
+                if (dashGoalsPctText) dashGoalsPctText.textContent = `${(s.overallProgress || 0).toFixed(0)}%`;
+                if (dashGoalsBarFill) dashGoalsBarFill.style.width = `${Math.min(100, Math.max(0, s.overallProgress || 0))}%`;
+            }
 
         } catch (err) {
             console.error("Summary error:", err);
@@ -992,7 +1048,334 @@ document.addEventListener("DOMContentLoaded", () => {
         return div.innerHTML;
     }
 
+    // ========================================================================
+    // SAVINGS GOAL TRACKER (CRUD, Calculations & Real-time Celebration)
+    // ========================================================================
+    function getGoalCategoryIcon(category) {
+        switch ((category || "").toLowerCase()) {
+            case "gadgets": return "📱";
+            case "laptop": return "💻";
+            case "travel": return "✈️";
+            case "shopping": return "🛍️";
+            case "vehicle": return "🚗";
+            case "education": return "🎓";
+            case "emergency": return "🛡️";
+            default: return "🎯";
+        }
+    }
+
+    async function loadSavingsGoals() {
+        try {
+            const res = await fetch("/api/goals");
+            if (!res.ok) throw new Error("Failed to load savings goals");
+            const goals = await res.json();
+
+            // Calculate metrics
+            let totalTarget = 0;
+            let totalSaved = 0;
+            let achievedCount = 0;
+
+            goals.forEach(g => {
+                totalTarget += (g.targetAmount || 0);
+                totalSaved += (g.savedAmount || 0);
+                if (g.achieved) achievedCount++;
+            });
+
+            const overallPct = totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
+
+            if (goalsTotalCount) goalsTotalCount.textContent = goals.length;
+            if (goalsAchievedCount) goalsAchievedCount.textContent = achievedCount;
+            if (goalsTotalSaved) goalsTotalSaved.textContent = formatMoney(totalSaved);
+            if (goalsOverallProgress) goalsOverallProgress.textContent = overallPct.toFixed(1) + "%";
+            if (sidebarGoalsBadge) sidebarGoalsBadge.textContent = goals.length;
+
+            renderGoalCards(goals);
+
+        } catch (err) {
+            console.error("Goals load error:", err);
+        }
+    }
+
+    function renderGoalCards(goals) {
+        if (!goalsCardsGrid) return;
+        goalsCardsGrid.innerHTML = "";
+
+        if (!goals || goals.length === 0) {
+            goalsCardsGrid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1; padding: 40px 20px;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🎯</div>
+                    <p style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">No savings goals yet!</p>
+                    <p style="color: var(--text-muted); margin-bottom: 16px;">Create your first milestone: New Phone, Laptop, Trip, or Shopping target.</p>
+                </div>
+            `;
+            return;
+        }
+
+        goals.forEach(g => {
+            const pct = Math.max(0, g.progressPercentage || 0);
+            const barWidth = Math.min(100, pct);
+            const icon = getGoalCategoryIcon(g.category);
+            const isAchieved = g.achieved || pct >= 100;
+
+            const card = document.createElement("div");
+            card.className = `goal-card ${isAchieved ? 'achieved-card' : ''}`;
+
+            card.innerHTML = `
+                <div class="goal-card-header">
+                    <div class="goal-icon-box">${icon}</div>
+                    <div class="goal-title-group">
+                        <div class="goal-title" title="${escapeHtml(g.name)}">${escapeHtml(g.name)}</div>
+                        <div class="goal-meta-row">
+                            <span class="goal-category-badge">${escapeHtml(g.category || 'General')}</span>
+                            <span class="goal-target-date">📅 Target: ${g.targetDate || 'TBD'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="goal-amounts-row">
+                    <div>
+                        <span class="goal-saved-big">${formatMoney(g.savedAmount)}</span>
+                    </div>
+                    <div>
+                        <span class="goal-target-sub">Target: ${formatMoney(g.targetAmount)}</span>
+                    </div>
+                </div>
+
+                <div class="goal-progress-track">
+                    <div class="goal-progress-fill ${isAchieved ? 'fill-achieved' : ''}" style="width: ${barWidth}%;"></div>
+                </div>
+
+                <div class="goal-stats-row">
+                    <span class="goal-remaining-text">
+                        ${isAchieved ? '🎉 Target reached!' : `Remaining: ${formatMoney(g.remainingAmount)}`}
+                    </span>
+                    <span class="goal-pct-badge">${pct.toFixed(1)}%</span>
+                </div>
+
+                ${isAchieved ? `
+                    <div class="goal-achieved-banner">
+                        <span>🎉</span>
+                        <span>Congratulations! You achieved your savings goal!</span>
+                    </div>
+                ` : ''}
+
+                <div class="goal-actions-row">
+                    <button type="button" class="btn-add-savings" data-id="${g.id}">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        <span>Add Savings</span>
+                    </button>
+                    <div class="goal-icon-buttons">
+                        <button type="button" class="btn-goal-tool btn-tool-edit" data-id="${g.id}" title="Edit Goal">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 20h9"/>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="btn-goal-tool btn-tool-del" data-id="${g.id}" data-name="${escapeHtml(g.name)}" title="Delete Goal">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Action: Add Savings
+            const addBtn = card.querySelector(".btn-add-savings");
+            addBtn.addEventListener("click", () => openDepositModal(g));
+
+            // Action: Edit Goal
+            const editBtn = card.querySelector(".btn-tool-edit");
+            editBtn.addEventListener("click", () => handleEditGoal(g));
+
+            // Action: Delete Goal
+            const delBtn = card.querySelector(".btn-tool-del");
+            delBtn.addEventListener("click", () => handleDeleteGoal(g.id, g.name));
+
+            goalsCardsGrid.appendChild(card);
+        });
+    }
+
+    // Modal: Open & Close Deposit Modal
+    function openDepositModal(goal) {
+        if (!addSavingsModal) return;
+        depositGoalId.value = goal.id;
+        modalGoalTitle.textContent = `Add Savings: ${goal.name}`;
+        modalGoalSubtitle.textContent = `Target: ${formatMoney(goal.targetAmount)} (Currently saved: ${formatMoney(goal.savedAmount)})`;
+        depositAmountInput.value = "";
+        addSavingsModal.classList.remove("hidden");
+        setTimeout(() => depositAmountInput.focus(), 100);
+    }
+
+    function closeDepositModal() {
+        if (addSavingsModal) addSavingsModal.classList.add("hidden");
+    }
+
+    if (closeSavingsModalBtn) closeSavingsModalBtn.addEventListener("click", closeDepositModal);
+    if (cancelSavingsModalBtn) cancelSavingsModalBtn.addEventListener("click", closeDepositModal);
+
+    // Quick deposit pills (+$25, +$50, +$100, etc.)
+    document.querySelectorAll(".btn-deposit-quick").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const amt = parseFloat(btn.getAttribute("data-amt") || "0");
+            const current = parseFloat(depositAmountInput.value) || 0;
+            depositAmountInput.value = (current + amt).toString();
+        });
+    });
+
+    // Submit Deposit Savings
+    if (depositSavingsForm) {
+        depositSavingsForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const id = depositGoalId.value;
+            const depositAmount = parseFloat(depositAmountInput.value);
+
+            if (isNaN(depositAmount) || depositAmount <= 0) {
+                showToast("Please enter a positive deposit amount.", "error");
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/goals", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "deposit", id, depositAmount: depositAmount.toString() })
+                });
+
+                if (!res.ok) throw new Error("Deposit failed");
+                const resData = await res.json();
+
+                closeDepositModal();
+
+                if (resData.achieved) {
+                    showToast(`🎉 Congratulations! You achieved your savings goal: "${resData.name}"!`, "success");
+                } else {
+                    showToast(`Added ${formatMoney(depositAmount)} to "${resData.name}"!`, "success");
+                }
+
+                await loadSavingsGoals();
+                await loadSummary();
+
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to add savings: " + err.message, "error");
+            }
+        });
+    }
+
+    // Toggle Goal Form
+    if (openCreateGoalBtn) {
+        openCreateGoalBtn.addEventListener("click", () => {
+            goalEditId.value = "";
+            goalFormHeaderTitle.textContent = "Create New Savings Goal";
+            submitGoalBtn.textContent = "Save Goal";
+            saveGoalForm.reset();
+            const d = new Date();
+            d.setMonth(d.getMonth() + 6);
+            goalTargetDateInput.value = d.toISOString().split("T")[0];
+            goalFormWrapper.classList.remove("hidden");
+            goalNameInput.focus();
+            goalFormWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+    }
+
+    if (closeGoalFormBtn) closeGoalFormBtn.addEventListener("click", () => goalFormWrapper.classList.add("hidden"));
+    if (cancelGoalFormBtn) cancelGoalFormBtn.addEventListener("click", () => goalFormWrapper.classList.add("hidden"));
+
+    // Edit Goal Action
+    function handleEditGoal(g) {
+        goalEditId.value = g.id;
+        goalFormHeaderTitle.textContent = `Edit Savings Goal (${g.id})`;
+        submitGoalBtn.textContent = "Update Goal";
+        goalNameInput.value = g.name;
+        goalCategorySelect.value = g.category || "General";
+        goalTargetInput.value = g.targetAmount;
+        goalSavedInput.value = g.savedAmount;
+        goalTargetDateInput.value = g.targetDate || "";
+        goalFormWrapper.classList.remove("hidden");
+        goalNameInput.focus();
+        goalFormWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // Delete Goal Action
+    async function handleDeleteGoal(id, name) {
+        if (!confirm(`Delete savings goal "${name}"?`)) return;
+
+        try {
+            const res = await fetch(`/api/goals?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+            if (!res.ok) throw new Error("Delete failed");
+
+            showToast(`Deleted "${name}"`, "success");
+            await loadSavingsGoals();
+            await loadSummary();
+
+        } catch (err) {
+            console.error(err);
+            showToast("Failed to delete goal: " + err.message, "error");
+        }
+    }
+
+    // Create / Edit Goal Form Submit
+    if (saveGoalForm) {
+        saveGoalForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const id = goalEditId.value;
+            const name = goalNameInput.value.trim();
+            const category = goalCategorySelect.value;
+            const targetAmount = parseFloat(goalTargetInput.value);
+            const savedAmount = parseFloat(goalSavedInput.value) || 0;
+            const targetDate = goalTargetDateInput.value;
+
+            if (!name || isNaN(targetAmount) || targetAmount <= 0 || !targetDate) {
+                showToast("Please enter a valid goal name, target amount, and target date.", "error");
+                return;
+            }
+
+            const payload = {
+                id,
+                name,
+                category,
+                targetAmount: targetAmount.toString(),
+                savedAmount: savedAmount.toString(),
+                targetDate
+            };
+
+            try {
+                const res = await fetch("/api/goals", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) throw new Error("Failed to save savings goal");
+                const resData = await res.json();
+
+                goalFormWrapper.classList.add("hidden");
+                saveGoalForm.reset();
+
+                if (resData.achieved) {
+                    showToast(`🎉 Congratulations! You achieved your savings goal: "${name}"!`, "success");
+                } else {
+                    showToast(id ? `Updated goal "${name}" successfully!` : `Created goal "${name}" with target ${formatMoney(targetAmount)}!`, "success");
+                }
+
+                await loadSavingsGoals();
+                await loadSummary();
+
+            } catch (err) {
+                console.error(err);
+                showToast("Error saving goal: " + err.message, "error");
+            }
+        });
+    }
+
     // Initial Load
     loadTransactions();
     loadSummary();
+    loadSavingsGoals();
 });

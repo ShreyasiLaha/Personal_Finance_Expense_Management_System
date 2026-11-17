@@ -81,6 +81,7 @@ public class Main {
             server.createContext("/api/summary", new SummaryHandler());
             server.createContext("/api/transactions", new TransactionsHandler());
             server.createContext("/api/budgets", new BudgetsHandler());
+            server.createContext("/api/goals", new GoalsHandler());
             server.createContext("/api/delete", new DeleteHandler());
             server.createContext("/api/reset", new ResetHandler());
             server.createContext("/api/export", new ExportHandler());
@@ -305,6 +306,99 @@ public class Main {
     }
 
     // ========================================================================
+    // HTTP HANDLER: Savings Goal Tracker (/api/goals)
+    // Supports GET (list), POST (create/update/deposit), DELETE (remove)
+    // ========================================================================
+    private class GoalsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            addCorsHeaders(exchange);
+            String method = exchange.getRequestMethod().toUpperCase();
+
+            if ("OPTIONS".equals(method)) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("GET".equals(method)) {
+                String json = financeManager.getSavingsGoalsJson();
+                sendJson(exchange, 200, json);
+
+            } else if ("POST".equals(method)) {
+                String body = readRequestBody(exchange);
+                Map<String, String> data = parseSimpleJson(body);
+
+                String action = data.getOrDefault("action", "");
+                String id = data.get("id");
+
+                // Check for "Add Savings" deposit action
+                if ("deposit".equalsIgnoreCase(action) || data.containsKey("depositAmount")) {
+                    double depositAmt = 0.0;
+                    try {
+                        depositAmt = Double.parseDouble(data.getOrDefault("depositAmount", data.getOrDefault("amount", "0")));
+                    } catch (NumberFormatException ignored) {}
+
+                    if (id != null && depositAmt > 0) {
+                        SavingsGoal updated = financeManager.addSavingsToGoal(id, depositAmt);
+                        if (updated != null) {
+                            sendJson(exchange, 200, updated.toJson());
+                            return;
+                        }
+                    }
+                    sendJson(exchange, 400, "{\"error\":\"Could not add savings to goal\"}");
+                    return;
+                }
+
+                // Normal Create or Edit Goal
+                String name = data.getOrDefault("name", "Savings Goal");
+                double target = 1000.00;
+                double saved = 0.00;
+                try {
+                    target = Double.parseDouble(data.getOrDefault("targetAmount", data.getOrDefault("target", "1000")));
+                    saved = Double.parseDouble(data.getOrDefault("savedAmount", data.getOrDefault("saved", "0")));
+                } catch (NumberFormatException ignored) {}
+
+                String targetDate = data.getOrDefault("targetDate", java.time.LocalDate.now().plusMonths(6).toString());
+                String category = data.getOrDefault("category", "General");
+
+                if (id != null && !id.trim().isEmpty() && financeManager.getSavingsGoalById(id) != null) {
+                    // Update existing goal
+                    SavingsGoal existing = new SavingsGoal(id, name, target, saved, targetDate, category);
+                    boolean ok = financeManager.updateSavingsGoal(existing);
+                    if (ok) {
+                        sendJson(exchange, 200, existing.toJson());
+                    } else {
+                        sendJson(exchange, 400, "{\"error\":\"Failed to update goal\"}");
+                    }
+                } else {
+                    // Create new goal
+                    String newId = (id != null && !id.trim().isEmpty()) ? id : "GOAL-" + System.currentTimeMillis() % 1000000;
+                    SavingsGoal goal = new SavingsGoal(newId, name, target, saved, targetDate, category);
+                    boolean ok = financeManager.addSavingsGoal(goal);
+                    if (ok) {
+                        sendJson(exchange, 201, goal.toJson());
+                    } else {
+                        sendJson(exchange, 400, "{\"error\":\"Failed to create goal\"}");
+                    }
+                }
+
+            } else if ("DELETE".equals(method)) {
+                Map<String, String> query = parseQuery(exchange.getRequestURI().getRawQuery());
+                String id = query.get("id");
+
+                if (id != null && financeManager.deleteSavingsGoal(id)) {
+                    sendJson(exchange, 200, "{\"success\":true,\"id\":\"" + id + "\"}");
+                } else {
+                    sendJson(exchange, 404, "{\"error\":\"Savings goal not found\"}");
+                }
+
+            } else {
+                sendJson(exchange, 405, "{\"error\":\"Method not allowed\"}");
+            }
+        }
+    }
+
+    // ========================================================================
     // HTTP HANDLER: Delete by query or POST (/api/delete)
     // ========================================================================
     private class DeleteHandler implements HttpHandler {
@@ -331,6 +425,7 @@ public class Main {
             addCorsHeaders(exchange);
             new File(DATA_FILE).delete();
             fileManager.seedDefaultTransactions();
+            fileManager.seedDefaultGoals();
             financeManager.loadData();
             sendJson(exchange, 200, "{\"message\":\"Sample data reset successfully\"}");
         }

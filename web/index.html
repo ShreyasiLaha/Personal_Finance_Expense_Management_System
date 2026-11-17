@@ -237,6 +237,16 @@
                     <span>Budgets & Alerts</span>
                     <span id="sidebarAlertBadge" class="sidebar-alert-badge hidden">0</span>
                 </a>
+
+                <a href="#goals" class="nav-item" data-section="section-goals">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <circle cx="12" cy="12" r="6"/>
+                        <circle cx="12" cy="12" r="2"/>
+                    </svg>
+                    <span>Savings Goals</span>
+                    <span id="sidebarGoalsBadge" class="sidebar-goals-badge">4</span>
+                </a>
             </nav>
 
             <div class="sidebar-footer">
@@ -361,6 +371,26 @@
                                 <div class="progress-bar-fill" id="cardSavingsProgress" style="width: 0%"></div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Savings Goals Quick Spotlight Banner -->
+                <div class="dashboard-goals-banner" id="dashGoalsBanner">
+                    <div class="dash-goals-left">
+                        <span class="dash-goals-icon">🎯</span>
+                        <div class="dash-goals-text">
+                            <h4>Savings Goals: <span id="dashGoalsProgressText">0 of 0 Achieved</span></h4>
+                            <p class="dash-goals-quote">"Every rupee brings you closer to your dream!"</p>
+                        </div>
+                    </div>
+                    <div class="dash-goals-right">
+                        <div class="dash-goals-progress-box">
+                            <span id="dashGoalsPctText">0%</span>
+                            <div class="dash-goals-bar-bg">
+                                <div class="dash-goals-bar-fill" id="dashGoalsBarFill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-sm btn-goal-view" id="dashViewGoalsBtn">View Goals →</button>
                     </div>
                 </div>
 
@@ -674,6 +704,143 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ===================================================== -->
+            <!-- SECTION 6: SAVINGS GOAL TRACKER VIEW                  -->
+            <!-- ===================================================== -->
+            <section id="section-goals" class="content-section">
+                <!-- Motivational Header Banner -->
+                <div class="goals-hero-banner">
+                    <div class="goals-hero-content">
+                        <div class="goals-hero-icon">🎯</div>
+                        <div>
+                            <h2>Savings Goals & Milestones</h2>
+                            <p class="motivational-quote">"Every rupee brings you closer to your dream!"</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="openCreateGoalBtn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        + Create Savings Goal
+                    </button>
+                </div>
+
+                <!-- Goals Metric Cards -->
+                <div class="goals-summary-grid">
+                    <div class="goal-metric-card">
+                        <span class="goal-metric-label">Total Goals</span>
+                        <h3 class="goal-metric-val" id="goalsTotalCount">0</h3>
+                        <span class="goal-metric-sub">Active milestones</span>
+                    </div>
+                    <div class="goal-metric-card">
+                        <span class="goal-metric-label">Achieved Goals</span>
+                        <h3 class="goal-metric-val text-success" id="goalsAchievedCount">0</h3>
+                        <span class="goal-metric-sub">100% completed</span>
+                    </div>
+                    <div class="goal-metric-card">
+                        <span class="goal-metric-label">Total Saved</span>
+                        <h3 class="goal-metric-val text-teal" id="goalsTotalSaved">$0.00</h3>
+                        <span class="goal-metric-sub">Accumulated savings</span>
+                    </div>
+                    <div class="goal-metric-card">
+                        <span class="goal-metric-label">Overall Progress</span>
+                        <h3 class="goal-metric-val" id="goalsOverallProgress">0.0%</h3>
+                        <span class="goal-metric-sub">Towards all targets</span>
+                    </div>
+                </div>
+
+                <!-- Create / Edit Savings Goal Panel (Collapsible) -->
+                <div id="goalFormWrapper" class="panel-card goal-form-panel hidden">
+                    <div class="panel-header">
+                        <div>
+                            <h2 id="goalFormHeaderTitle">Create New Savings Goal</h2>
+                            <p>Enter goal details to calculate target dates, remaining amounts, and progress</p>
+                        </div>
+                        <button type="button" class="btn btn-outline-sm" id="closeGoalFormBtn">✕ Close</button>
+                    </div>
+
+                    <form id="saveGoalForm" class="goal-interactive-form">
+                        <input type="hidden" id="goalEditId" value="">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="goalNameInput">Goal Name *</label>
+                                <input type="text" id="goalNameInput" class="form-input" placeholder="e.g. New Phone, Laptop, Trip, Shopping" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="goalCategorySelect">Category & Icon</label>
+                                <select id="goalCategorySelect" class="form-input">
+                                    <option value="Gadgets">📱 New Phone & Gadgets</option>
+                                    <option value="Laptop">💻 Laptop & Computer</option>
+                                    <option value="Travel">✈️ Vacation & Trip</option>
+                                    <option value="Shopping">🛍️ Fashion & Shopping</option>
+                                    <option value="Vehicle">🚗 Car / Bike</option>
+                                    <option value="Education">🎓 Education & Skills</option>
+                                    <option value="Emergency">🛡️ Emergency Fund</option>
+                                    <option value="Other">🎯 Personal Dream</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="goalTargetInput">Target Amount ($) *</label>
+                                <input type="number" id="goalTargetInput" class="form-input" min="1" step="0.01" placeholder="e.g. 1000" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="goalSavedInput">Already Saved Amount ($)</label>
+                                <input type="number" id="goalSavedInput" class="form-input" min="0" step="0.01" placeholder="e.g. 250" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="goalTargetDateInput">Target Date *</label>
+                                <input type="date" id="goalTargetDateInput" class="form-input" required>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelGoalFormBtn">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="submitGoalBtn">Save Goal</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Goals Cards Grid -->
+                <div class="goals-cards-grid" id="goalsCardsGrid">
+                    <!-- Populated dynamically via script.js -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Quick Add Savings Deposit Modal -->
+    <div id="addSavingsModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modalGoalTitle">Add Savings</h3>
+                    <p id="modalGoalSubtitle" class="modal-subtitle">Increase saved funds for this goal</p>
+                </div>
+                <button type="button" class="btn-close-modal" id="closeSavingsModalBtn">✕</button>
+            </div>
+            <form id="depositSavingsForm">
+                <input type="hidden" id="depositGoalId" value="">
+                <div class="form-group" style="margin: 18px 0 10px 0;">
+                    <label for="depositAmountInput">Deposit Amount ($) *</label>
+                    <input type="number" id="depositAmountInput" class="form-input" min="1" step="0.01" placeholder="e.g. 50" required>
+                </div>
+                <div class="quick-deposit-pills">
+                    <button type="button" class="btn-deposit-quick" data-amt="25">+$25</button>
+                    <button type="button" class="btn-deposit-quick" data-amt="50">+$50</button>
+                    <button type="button" class="btn-deposit-quick" data-amt="100">+$100</button>
+                    <button type="button" class="btn-deposit-quick" data-amt="250">+$250</button>
+                </div>
+                <div class="modal-actions" style="margin-top: 22px;">
+                    <button type="button" class="btn btn-secondary" id="cancelSavingsModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="confirmDepositBtn">Add Savings</button>
+                </div>
+            </form>
         </div>
     </div>
 

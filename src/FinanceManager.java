@@ -18,15 +18,18 @@ public class FinanceManager {
     // ------------------------------------------------------------------------
     // COLLECTIONS: ArrayList used as the in-memory data store for transactions
     // COLLECTIONS: HashMap used to store budget limits by category
+    // COLLECTIONS: ArrayList used for savings goals tracking
     // ------------------------------------------------------------------------
     private final ArrayList<Transaction> transactions;
     private final HashMap<String, Double> categoryBudgets;
+    private final ArrayList<SavingsGoal> savingsGoals;
     private final FileManager fileManager;
 
     public FinanceManager(FileManager fileManager) {
         this.fileManager = fileManager;
         this.transactions = new ArrayList<>();
         this.categoryBudgets = new HashMap<>();
+        this.savingsGoals = new ArrayList<>();
         loadData();
     }
 
@@ -39,6 +42,9 @@ public class FinanceManager {
 
         this.categoryBudgets.clear();
         this.categoryBudgets.putAll(fileManager.loadBudgets());
+
+        this.savingsGoals.clear();
+        this.savingsGoals.addAll(fileManager.loadSavingsGoals());
     }
 
     /**
@@ -304,6 +310,9 @@ public class FinanceManager {
         // Budget Alerts Summary
         sb.append(",\"budgetSummary\":").append(getBudgetSummaryJson());
 
+        // Savings Goal Summary
+        sb.append(",\"savingsGoalSummary\":").append(getSavingsGoalsSummaryJson());
+
         sb.append("}");
         return sb.toString();
     }
@@ -411,6 +420,97 @@ public class FinanceManager {
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    /**
+     * ========================================================================
+     * SAVINGS GOAL TRACKER METHODS (Collections & Logic)
+     * ========================================================================
+     */
+    public synchronized ArrayList<SavingsGoal> getAllSavingsGoals() {
+        return new ArrayList<>(this.savingsGoals);
+    }
+
+    public synchronized SavingsGoal getSavingsGoalById(String id) {
+        if (id == null) return null;
+        for (SavingsGoal g : savingsGoals) {
+            if (g.getId().equalsIgnoreCase(id.trim())) {
+                return g;
+            }
+        }
+        return null;
+    }
+
+    public synchronized boolean addSavingsGoal(SavingsGoal goal) {
+        if (goal == null) return false;
+        savingsGoals.add(goal);
+        return fileManager.saveSavingsGoals(savingsGoals);
+    }
+
+    public synchronized boolean updateSavingsGoal(SavingsGoal updated) {
+        if (updated == null) return false;
+        for (int i = 0; i < savingsGoals.size(); i++) {
+            if (savingsGoals.get(i).getId().equalsIgnoreCase(updated.getId())) {
+                savingsGoals.set(i, updated);
+                return fileManager.saveSavingsGoals(savingsGoals);
+            }
+        }
+        return false;
+    }
+
+    public synchronized boolean deleteSavingsGoal(String id) {
+        if (id == null) return false;
+        boolean removed = savingsGoals.removeIf(g -> g.getId().equalsIgnoreCase(id.trim()));
+        if (removed) {
+            return fileManager.saveSavingsGoals(savingsGoals);
+        }
+        return false;
+    }
+
+    public synchronized SavingsGoal addSavingsToGoal(String id, double amount) {
+        SavingsGoal goal = getSavingsGoalById(id);
+        if (goal != null && amount > 0) {
+            goal.addSavings(amount);
+            fileManager.saveSavingsGoals(savingsGoals);
+            return goal;
+        }
+        return null;
+    }
+
+    public synchronized String getSavingsGoalsJson() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < savingsGoals.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append(savingsGoals.get(i).toJson());
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    public synchronized String getSavingsGoalsSummaryJson() {
+        int totalGoals = savingsGoals.size();
+        int achievedGoals = 0;
+        double totalTarget = 0.0;
+        double totalSaved = 0.0;
+
+        for (SavingsGoal g : savingsGoals) {
+            totalTarget += g.getTargetAmount();
+            totalSaved += g.getSavedAmount();
+            if (g.isAchieved()) {
+                achievedGoals++;
+            }
+        }
+
+        double overallPct = totalTarget > 0 ? (totalSaved / totalTarget) * 100.0 : 0.0;
+
+        return "{" +
+                "\"totalGoals\":" + totalGoals + "," +
+                "\"achievedGoals\":" + achievedGoals + "," +
+                "\"totalTarget\":" + String.format(Locale.US, "%.2f", totalTarget) + "," +
+                "\"totalSaved\":" + String.format(Locale.US, "%.2f", totalSaved) + "," +
+                "\"overallProgress\":" + String.format(Locale.US, "%.1f", overallPct) +
+                "}";
     }
 
     private String escapeJson(String s) {

@@ -9,20 +9,27 @@ It demonstrates core **Object-Oriented Programming (OOP) concepts** and **Java F
 ## 🌟 Key Features
 
 1. **Financial Dashboard**: Real-time display of **Total Income**, **Total Expenses**, and **Current Balance** (Surplus/Deficit status).
-2. **Automated Budget Alert System**: Set category and overall spending limits; tracks live utilization with automated alert states:
+2. **Savings Goal Tracker**: Create and track financial milestones (New Phone, Laptop, Trip, Shopping, Emergency Fund):
+   - Track Target Amount, Current Saved Amount, Remaining Amount, and Completion Percentage.
+   - Interactive cards with category icons (📱, 💻, ✈️, 🛍️, 🚗, 🎓, 🛡️, 🎯) and animated progress bars.
+   - **Add Savings** button with quick deposit chips (`+$25`, `+$50`, `+$100`, `+$250`) to deposit funds incrementally.
+   - Edit and delete goal options.
+   - Automatic 100% milestone celebration banner: *"🎉 Congratulations! You achieved your savings goal!"*
+   - Motivational message: *"Every rupee brings you closer to your dream!"*
+3. **Automated Budget Alert System**: Set category and overall spending limits; tracks live utilization with automated alert states:
    - 🟢 **On Track** (`< 80%`)
    - 🟡 **Warning** (`80% - 99%`)
    - 🔴 **Exceeded** (`≥ 100%`)
    - Live dashboard alert banner, sidebar warning badges, and real-time alerts when adding expenses that breach limits.
-3. **Add Income & Expenses**: Record earnings and outlays with titles, dates, categories, payment methods, and notes.
-4. **Predefined & Custom Categories**:
+4. **Add Income & Expenses**: Record earnings and outlays with titles, dates, categories, payment methods, and notes.
+5. **Predefined & Custom Categories**:
    - **Expenses**: `Food`, `Shopping`, `Travel`, `Education`, `Bills`, `Other`
    - **Income**: `Salary`, `Freelance`, `Investments`, `Bonus`, `Other`
-5. **Transaction History**: Searchable and filterable ledger with instant editing, deletion and category filtering.
-6. **Monthly Expense Summary**: Aggregates and tracks month-by-month spending trends using Java Collections.
-7. **Visual Analytics**: Interactive Category Donut Chart and Monthly Cash Flow Bar Chart rendered with HTML5 Canvas.
-8. **CSV Data Export**: 1-click download of all transaction data.
-9. **Teal & White Theme**: Modern responsive layout featuring sidebar navigation, multi-theme selector, smooth animations, and hover effects.
+6. **Transaction History**: Searchable and filterable ledger with instant editing, deletion and category filtering.
+7. **Monthly Expense Summary**: Aggregates and tracks month-by-month spending trends using Java Collections.
+8. **Visual Analytics**: Interactive Category Donut Chart and Monthly Cash Flow Bar Chart rendered with HTML5 Canvas.
+9. **CSV Data Export**: 1-click download of all transaction data.
+10. **Teal & White Theme**: Modern responsive layout featuring sidebar navigation, multi-theme selector, smooth animations, and hover effects.
 
 ---
 
@@ -31,8 +38,8 @@ It demonstrates core **Object-Oriented Programming (OOP) concepts** and **Java F
 This project is structured specifically to showcase the four fundamental OOP principles:
 
 ### 1. Encapsulation
-- **Where**: Implemented in [`Transaction.java`](src/Transaction.java), [`Income.java`](src/Income.java), [`Expense.java`](src/Expense.java), and [`Budget.java`](src/Budget.java).
-- **How**: All class variables (`id`, `title`, `amount`, `category`, `date`, `notes`, `source`, `paymentMethod`, `limitAmount`) are declared with `private` or `protected` access modifiers. 
+- **Where**: Implemented in [`Transaction.java`](src/Transaction.java), [`Income.java`](src/Income.java), [`Expense.java`](src/Expense.java), [`Budget.java`](src/Budget.java), and [`SavingsGoal.java`](src/SavingsGoal.java).
+- **How**: All class variables (`id`, `title`, `amount`, `category`, `date`, `notes`, `source`, `paymentMethod`, `limitAmount`, `targetAmount`, `savedAmount`) are declared with `private` or `protected` access modifiers. 
 - Public `getter` and `setter` methods provide controlled, validated read and write access to these variables.
 
 ### 2. Inheritance
@@ -46,13 +53,14 @@ This project is structured specifically to showcase the four fundamental OOP pri
 - **Where**: Implemented in [`FinanceManager.java`](src/FinanceManager.java).
 - **How**:
   - `ArrayList<Transaction>`: Dynamically sized collection used to maintain the active list of transaction objects in memory.
+  - `ArrayList<SavingsGoal>`: Collection tracking financial target milestones, deposits, and completion state.
   - `HashMap<String, Double>`: Key-value map used to aggregate category-wise expense totals (`Food`, `Shopping`, `Travel`, `Education`, `Bills`), calculate monthly spending summaries (`YYYY-MM` -> `Total`), and track category budget limits (`Food` -> `$300.00`).
 
 ### 4. File Handling
 - **Where**: Implemented in [`FileManager.java`](src/FileManager.java).
 - **How**:
-  - `FileReader` wrapped inside `BufferedReader`: Reads delimited records line-by-line from `transactions.txt` and `budgets.txt`.
-  - `FileWriter` wrapped inside `BufferedWriter`: Persists new transactions and category budget limits efficiently without data corruption.
+  - `FileReader` wrapped inside `BufferedReader`: Reads delimited records line-by-line from `transactions.txt`, `budgets.txt`, and `goals.txt`.
+  - `FileWriter` wrapped inside `BufferedWriter`: Persists new transactions, category budget limits, and savings goals efficiently without data corruption.
 
 ---
 
@@ -67,17 +75,19 @@ Personal_Finance_Expense_Management_System/
 │   ├── Income.java            # Child class for income transactions
 │   ├── Expense.java           # Child class for expense transactions
 │   ├── Budget.java            # Encapsulated Budget model (category & limit)
-│   ├── FinanceManager.java    # Business logic, budget alert calculation & collections
+│   ├── SavingsGoal.java       # Encapsulated Savings Goal model (target, saved & calculation)
+│   ├── FinanceManager.java    # Business logic, budget alerts, savings goals & collections
 │   └── FileManager.java       # File handling with FileReader, FileWriter, BufferedReader & BufferedWriter
 │
 ├── web/
 │   ├── index.html             # Dashboard UI with sidebar navigation & teal/white theme
 │   ├── style.css              # Styling, responsive layout, animations & cards
-│   └── script.js              # REST API connector, budget alert system & canvas charts
+│   └── script.js              # REST API connector, budget alert system, goals & canvas charts
 │
 ├── bin/                       # Compiled .class bytecode files
 ├── transactions.txt           # Persistent text database for transactions
 ├── budgets.txt                # Persistent text database for category limits
+├── goals.txt                  # Persistent text database for savings goals
 └── README.md                  # Documentation and setup guide
 ```
 
@@ -143,6 +153,9 @@ The lightweight server exposes clean JSON endpoints used by the frontend:
 | `/api/summary` | `GET` | Returns Current Balance, Total Income, Total Expenses, Category Breakdown (HashMap), Monthly Summary, and Budget Statuses |
 | `/api/budgets` | `GET` | Returns category budget limits, amounts spent, percentages, and alert flags |
 | `/api/budgets` | `POST` | Sets or updates a category budget limit and saves to `budgets.txt` |
+| `/api/goals` | `GET` | Returns list of savings goals with target, saved, remaining, percentage, and achieved state |
+| `/api/goals` | `POST` | Creates a new goal, updates an existing goal, or logs a savings deposit |
+| `/api/goals?id=...` | `DELETE` | Removes a savings goal by ID and updates `goals.txt` |
 | `/api/transactions` | `GET` | Returns transaction list (supports `?type=`, `?category=`, `?search=`) |
 | `/api/transactions` | `POST` | Creates a new Income or Expense record and returns real-time budget alert warning if limit breached |
 | `/api/transactions?id=...` | `DELETE` | Removes a transaction by ID and updates `transactions.txt` |

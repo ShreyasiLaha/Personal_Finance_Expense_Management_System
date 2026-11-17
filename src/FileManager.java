@@ -21,15 +21,24 @@ public class FileManager {
     // ENCAPSULATION: Private variable for the target storage file paths
     private final String filePath;
     private final String budgetsFilePath;
+    private final String goalsFilePath;
 
     public FileManager(String filePath) {
         this.filePath = filePath;
         this.budgetsFilePath = "budgets.txt";
+        this.goalsFilePath = "goals.txt";
     }
 
     public FileManager(String filePath, String budgetsFilePath) {
         this.filePath = filePath;
         this.budgetsFilePath = budgetsFilePath;
+        this.goalsFilePath = "goals.txt";
+    }
+
+    public FileManager(String filePath, String budgetsFilePath, String goalsFilePath) {
+        this.filePath = filePath;
+        this.budgetsFilePath = budgetsFilePath;
+        this.goalsFilePath = goalsFilePath;
     }
 
     /**
@@ -248,5 +257,91 @@ public class FileManager {
 
         saveBudgets(defaults);
         return defaults;
+    }
+
+    /**
+     * ========================================================================
+     * SAVINGS GOAL FILE HANDLING: Reads goals from goals.txt
+     * ========================================================================
+     */
+    public synchronized ArrayList<SavingsGoal> loadSavingsGoals() {
+        ArrayList<SavingsGoal> goals = new ArrayList<>();
+        File file = new File(goalsFilePath);
+
+        if (!file.exists() || file.length() == 0) {
+            goals = seedDefaultGoals();
+            return goals;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+
+                String[] parts = line.split("\\|", -1);
+                if (parts.length >= 4) {
+                    try {
+                        String id = parts[0].trim();
+                        String name = parts[1].trim();
+                        double target = Double.parseDouble(parts[2].trim());
+                        double saved = Double.parseDouble(parts[3].trim());
+                        String date = parts.length > 4 ? parts[4].trim() : java.time.LocalDate.now().plusMonths(6).toString();
+                        String category = parts.length > 5 ? parts[5].trim() : "General";
+
+                        goals.add(new SavingsGoal(id, name, target, saved, date, category));
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading savings goals: " + e.getMessage());
+        }
+
+        if (goals.isEmpty()) {
+            goals = seedDefaultGoals();
+        }
+
+        return goals;
+    }
+
+    /**
+     * ========================================================================
+     * SAVINGS GOAL FILE HANDLING: Saves goals to goals.txt
+     * ========================================================================
+     */
+    public synchronized boolean saveSavingsGoals(ArrayList<SavingsGoal> goals) {
+        File file = new File(goalsFilePath);
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
+            writer.write("# Savings Goals File");
+            writer.newLine();
+            writer.write("# Format: ID|NAME|TARGET_AMOUNT|SAVED_AMOUNT|TARGET_DATE|CATEGORY");
+            writer.newLine();
+
+            for (SavingsGoal g : goals) {
+                writer.write(g.toFileString());
+                writer.newLine();
+            }
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error writing savings goals: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Seeds initial sample savings goals
+     */
+    public synchronized ArrayList<SavingsGoal> seedDefaultGoals() {
+        ArrayList<SavingsGoal> sampleGoals = new ArrayList<>();
+        sampleGoals.add(new SavingsGoal("GOAL-101", "New Smartphone", 800.00, 600.00, "2026-12-25", "Gadgets"));
+        sampleGoals.add(new SavingsGoal("GOAL-102", "Developer Laptop", 1500.00, 1500.00, "2026-11-30", "Laptop")); // Achieved!
+        sampleGoals.add(new SavingsGoal("GOAL-103", "Goa Vacation Trip", 650.00, 320.00, "2027-01-15", "Travel"));
+        sampleGoals.add(new SavingsGoal("GOAL-104", "Emergency Cushion Fund", 2000.00, 950.00, "2027-06-30", "Other"));
+
+        saveSavingsGoals(sampleGoals);
+        return sampleGoals;
     }
 }

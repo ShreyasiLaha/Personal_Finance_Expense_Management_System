@@ -1,0 +1,6 @@
+# Savings Goals File
+# Format: ID|NAME|TARGET_AMOUNT|SAVED_AMOUNT|TARGET_DATE|CATEGORY
+GOAL-101|New Smartphone|800.00|600.00|2026-12-25|Gadgets
+GOAL-102|Developer Laptop|1500.00|1500.00|2026-11-30|Laptop
+GOAL-103|Goa Vacation Trip|650.00|320.00|2027-01-15|Travel
+GOAL-104|Emergency Cushion Fund|2000.00|950.00|2027-06-30|Other

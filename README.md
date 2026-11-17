@@ -16,7 +16,13 @@ It demonstrates core **Object-Oriented Programming (OOP) concepts** and **Java F
    - Edit and delete goal options.
    - Automatic 100% milestone celebration banner: *"🎉 Congratulations! You achieved your savings goal!"*
    - Motivational message: *"Every rupee brings you closer to your dream!"*
-3. **Automated Budget Alert System**: Set category and overall spending limits; tracks live utilization with automated alert states:
+3. **Smart Spending Analysis**: Intelligent, rule-based expenditure analysis:
+   - Total monthly expenses, highest spending category, and lowest spending category.
+   - Category-wise expense distribution for `Food`, `Shopping`, `Travel`, `Education`, and `Bills`.
+   - Interactive **Chart.js Pie Chart** for percentage category allocations.
+   - Interactive **Chart.js Bar Chart** for monthly Income vs. Expense comparisons.
+   - Rule-based smart spending suggestions (*"You spent the most on Food this month"*, *"Your shopping expenses are relatively high"*, *"Try saving more by reducing unnecessary expenses"*).
+4. **Automated Budget Alert System**: Set category and overall spending limits; tracks live utilization with automated alert states:
    - 🟢 **On Track** (`< 80%`)
    - 🟡 **Warning** (`80% - 99%`)
    - 🔴 **Exceeded** (`≥ 100%`)
@@ -156,6 +162,7 @@ The lightweight server exposes clean JSON endpoints used by the frontend:
 | `/api/goals` | `GET` | Returns list of savings goals with target, saved, remaining, percentage, and achieved state |
 | `/api/goals` | `POST` | Creates a new goal, updates an existing goal, or logs a savings deposit |
 | `/api/goals?id=...` | `DELETE` | Removes a savings goal by ID and updates `goals.txt` |
+| `/api/analysis` | `GET` | Returns smart spending analysis metrics (highest/lowest categories, percentages, suggestions) |
 | `/api/transactions` | `GET` | Returns transaction list (supports `?type=`, `?category=`, `?search=`) |
 | `/api/transactions` | `POST` | Creates a new Income or Expense record and returns real-time budget alert warning if limit breached |
 | `/api/transactions?id=...` | `DELETE` | Removes a transaction by ID and updates `transactions.txt` |

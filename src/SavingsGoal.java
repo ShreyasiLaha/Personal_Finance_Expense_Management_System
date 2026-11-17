@@ -171,3 +171,4 @@ public class SavingsGoal {
         return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", "");
     }
 }
+

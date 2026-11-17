@@ -236,6 +236,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 pageSubheading.textContent = "Track targets, log savings deposits, and celebrate your financial milestones.";
                 loadSavingsGoals();
                 break;
+            case "section-analysis":
+                pageHeading.textContent = "Smart Spending Analysis";
+                pageSubheading.textContent = "Data-driven insights, category comparisons, and automated suggestions.";
+                loadSpendingAnalysis();
+                break;
         }
 
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -387,6 +392,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (dashGoalsPctText) dashGoalsPctText.textContent = `${(s.overallProgress || 0).toFixed(0)}%`;
                 if (dashGoalsBarFill) dashGoalsBarFill.style.width = `${Math.min(100, Math.max(0, s.overallProgress || 0))}%`;
             }
+
+            // Refresh Smart Spending Analysis
+            loadSpendingAnalysis();
 
         } catch (err) {
             console.error("Summary error:", err);
@@ -1374,8 +1382,283 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // ========================================================================
+    // SMART SPENDING ANALYSIS & CHART.JS ANALYTICS
+    // ========================================================================
+    let chartJsSpendingPieInstance = null;
+    let chartJsMonthlyBarInstance = null;
+
+    const analysisTotalExpense = document.getElementById("analysisTotalExpense");
+    const analysisHighestCatName = document.getElementById("analysisHighestCatName");
+    const analysisHighestBadge = document.getElementById("analysisHighestBadge");
+    const analysisLowestCatName = document.getElementById("analysisLowestCatName");
+    const analysisLowestBadge = document.getElementById("analysisLowestBadge");
+    const analysisTrackedCount = document.getElementById("analysisTrackedCount");
+    const analysisSuggestionsGrid = document.getElementById("analysisSuggestionsGrid");
+    const analysisCategoryTableBody = document.getElementById("analysisCategoryTableBody");
+    const chartJsSpendingPie = document.getElementById("chartJsSpendingPie");
+    const chartJsMonthlyBar = document.getElementById("chartJsMonthlyBar");
+
+    async function loadSpendingAnalysis() {
+        try {
+            // Fetch analysis data and summary data concurrently
+            const [analysisRes, summaryRes] = await Promise.all([
+                fetch("/api/analysis"),
+                fetch("/api/summary")
+            ]);
+
+            if (!analysisRes.ok) throw new Error("Could not load spending analysis");
+            const data = await analysisRes.json();
+            const summary = summaryRes.ok ? await summaryRes.json() : {};
+
+            // 1. Update 4 Key Metrics
+            if (analysisTotalExpense) analysisTotalExpense.textContent = formatMoney(data.totalExpenses || 0);
+            if (analysisHighestCatName) analysisHighestCatName.textContent = data.highestCategory || "None";
+            if (analysisHighestBadge) {
+                analysisHighestBadge.textContent = `${formatMoney(data.highestAmount || 0)} (${data.highestPercentage || 0}%)`;
+            }
+            if (analysisLowestCatName) analysisLowestCatName.textContent = data.lowestCategory || "None";
+            if (analysisLowestBadge) {
+                analysisLowestBadge.textContent = `${formatMoney(data.lowestAmount || 0)} (${data.lowestPercentage || 0}%)`;
+            }
+            if (analysisTrackedCount) {
+                const count = Object.keys(data.categoryExpenses || {}).length;
+                analysisTrackedCount.textContent = count;
+            }
+
+            // 2. Render Smart Suggestions
+            renderSmartSuggestions(data.suggestions || []);
+
+            // 3. Render Chart.js Pie Chart (Category-wise allocation)
+            renderChartJsPie(data.categoryExpenses || {}, data.totalExpenses || 0);
+
+            // 4. Render Chart.js Bar Chart (Monthly Income vs Expense)
+            renderChartJsBar(summary.monthlyTotals || {});
+
+            // 5. Render Detailed Category Breakdown Table
+            renderAnalysisCategoryTable(data.categoryExpenses || {}, data.totalExpenses || 0);
+
+        } catch (err) {
+            console.error("Spending analysis error:", err);
+        }
+    }
+
+    function renderSmartSuggestions(suggestions) {
+        if (!analysisSuggestionsGrid) return;
+        analysisSuggestionsGrid.innerHTML = "";
+
+        if (!suggestions || suggestions.length === 0) {
+            analysisSuggestionsGrid.innerHTML = `
+                <div class="suggestion-card" style="grid-column: 1 / -1;">
+                    <span class="suggestion-icon">💡</span>
+                    <span class="suggestion-text">Add more expenses to generate personalized smart spending suggestions.</span>
+                </div>
+            `;
+            return;
+        }
+
+        suggestions.forEach(tip => {
+            const card = document.createElement("div");
+            let icon = "💡";
+            let extraClass = "";
+
+            if (tip.includes("Great!") || tip.includes("saved") || tip.includes("lowest")) {
+                icon = "🎉";
+                extraClass = "suggestion-success";
+            } else if (tip.includes("most") || tip.includes("high") || tip.includes("reducing")) {
+                icon = "⚠️";
+                extraClass = "suggestion-warning";
+            } else if (tip.includes("Food")) {
+                icon = "🍽️";
+            } else if (tip.includes("Shopping")) {
+                icon = "🛍️";
+            }
+
+            card.className = `suggestion-card ${extraClass}`;
+            card.innerHTML = `
+                <span class="suggestion-icon">${icon}</span>
+                <span class="suggestion-text">${escapeHtml(tip)}</span>
+            `;
+            analysisSuggestionsGrid.appendChild(card);
+        });
+    }
+
+    function renderChartJsPie(categoryExpenses, totalExpense) {
+        if (!chartJsSpendingPie) return;
+        if (typeof Chart === "undefined") {
+            console.warn("Chart.js is not loaded yet");
+            return;
+        }
+
+        const labels = Object.keys(categoryExpenses);
+        const values = Object.values(categoryExpenses);
+
+        if (chartJsSpendingPieInstance) {
+            chartJsSpendingPieInstance.destroy();
+        }
+
+        if (labels.length === 0 || totalExpense === 0) {
+            return;
+        }
+
+        const ctx = chartJsSpendingPie.getContext("2d");
+        const colors = [
+            "#0d9488", "#14b8a6", "#2dd4bf", "#0ea5e9", "#f59e0b",
+            "#ef4444", "#8b5cf6", "#ec4899", "#64748b"
+        ];
+
+        chartJsSpendingPieInstance = new Chart(ctx, {
+            type: "pie",
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: "#ffffff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            font: { family: "'Plus Jakarta Sans', sans-serif", size: 12 },
+                            padding: 12
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw || 0;
+                                const pct = totalExpense > 0 ? ((val / totalExpense) * 100).toFixed(1) : "0.0";
+                                return ` ${context.label}: $${val.toFixed(2)} (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderChartJsBar(monthlyTotals) {
+        if (!chartJsMonthlyBar) return;
+        if (typeof Chart === "undefined") {
+            console.warn("Chart.js is not loaded yet");
+            return;
+        }
+
+        const months = Object.keys(monthlyTotals).sort();
+        const incomeData = months.map(m => monthlyTotals[m].income || 0);
+        const expenseData = months.map(m => monthlyTotals[m].expense || 0);
+
+        if (chartJsMonthlyBarInstance) {
+            chartJsMonthlyBarInstance.destroy();
+        }
+
+        if (months.length === 0) {
+            return;
+        }
+
+        const ctx = chartJsMonthlyBar.getContext("2d");
+
+        chartJsMonthlyBarInstance = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: "Income ($)",
+                        data: incomeData,
+                        backgroundColor: "#0d9488",
+                        borderRadius: 4
+                    },
+                    {
+                        label: "Expense ($)",
+                        data: expenseData,
+                        backgroundColor: "#ef4444",
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: "'Plus Jakarta Sans', sans-serif" } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) { return "$" + value; },
+                            font: { family: "'Plus Jakarta Sans', sans-serif" }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: "top",
+                        labels: {
+                            font: { family: "'Plus Jakarta Sans', sans-serif", size: 12 },
+                            padding: 14
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.dataset.label}: $${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderAnalysisCategoryTable(categoryMap, totalExpense) {
+        if (!analysisCategoryTableBody) return;
+        analysisCategoryTableBody.innerHTML = "";
+
+        const entries = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
+        if (entries.length === 0) {
+            analysisCategoryTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No expense categories to display.</td></tr>`;
+            return;
+        }
+
+        entries.forEach(([cat, amt]) => {
+            const pct = totalExpense > 0 ? ((amt / totalExpense) * 100).toFixed(1) : "0.0";
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>
+                    <span class="badge badge-category" style="font-size: 0.85rem;">${escapeHtml(cat)}</span>
+                </td>
+                <td>
+                    <div class="cat-progress-cell">
+                        <div class="cat-track-bar">
+                            <div class="cat-fill-bar" style="width: ${Math.min(100, Math.max(0, pct))}%;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td class="text-right" style="font-weight: 700;">
+                    ${formatMoney(amt)}
+                </td>
+                <td class="text-right" style="color: var(--primary); font-weight: 800;">
+                    ${pct}%
+                </td>
+            `;
+
+            analysisCategoryTableBody.appendChild(tr);
+        });
+    }
+
     // Initial Load
     loadTransactions();
     loadSummary();
     loadSavingsGoals();
+    loadSpendingAnalysis();
 });

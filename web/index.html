@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Chart.js for Smart Spending Analysis (Pie & Bar charts) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -246,6 +248,15 @@
                     </svg>
                     <span>Savings Goals</span>
                     <span id="sidebarGoalsBadge" class="sidebar-goals-badge">4</span>
+                </a>
+
+                <a href="#analysis" class="nav-item" data-section="section-analysis">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>Smart Analysis</span>
                 </a>
             </nav>
 
@@ -809,6 +820,135 @@
                 <!-- Goals Cards Grid -->
                 <div class="goals-cards-grid" id="goalsCardsGrid">
                     <!-- Populated dynamically via script.js -->
+                </div>
+            </section>
+
+            <!-- ===================================================== -->
+            <!-- SECTION 7: SMART SPENDING ANALYSIS VIEW               -->
+            <!-- ===================================================== -->
+            <section id="section-analysis" class="content-section">
+                <!-- Smart Analysis Hero Banner -->
+                <div class="analysis-hero-banner">
+                    <div class="analysis-hero-content">
+                        <div class="analysis-hero-icon">📊</div>
+                        <div>
+                            <h2>Smart Spending Analysis</h2>
+                            <p>Data-driven expenditure breakdown, category ratios, and intelligent financial suggestions.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Smart Suggestions Panel -->
+                <div class="panel-card analysis-suggestions-panel">
+                    <div class="panel-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 1.3rem;">💡</span>
+                            <div>
+                                <h3 style="margin: 0; font-size: 1.05rem;">Smart Spending Suggestions</h3>
+                                <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary);">Automated insights generated from your transaction patterns</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="suggestions-grid" id="analysisSuggestionsGrid">
+                        <!-- Populated dynamically via script.js -->
+                    </div>
+                </div>
+
+                <!-- 4 Spending KPI Metric Cards -->
+                <div class="analysis-metrics-grid">
+                    <!-- Total Monthly Expenses -->
+                    <div class="analysis-kpi-card card-teal">
+                        <div class="kpi-icon-bubble">💳</div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Total Monthly Expenses</span>
+                            <h2 class="kpi-value text-expense" id="analysisTotalExpense">$0.00</h2>
+                            <span class="kpi-subtext">Sum of all current outlays</span>
+                        </div>
+                    </div>
+
+                    <!-- Highest Spending Category -->
+                    <div class="analysis-kpi-card card-highest">
+                        <div class="kpi-icon-bubble">📈</div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Highest Spending Category</span>
+                            <h2 class="kpi-value" id="analysisHighestCatName">—</h2>
+                            <div class="kpi-detail-badge" id="analysisHighestBadge">$0.00 (0.0%)</div>
+                        </div>
+                    </div>
+
+                    <!-- Lowest Spending Category -->
+                    <div class="analysis-kpi-card card-lowest">
+                        <div class="kpi-icon-bubble">📉</div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Lowest Spending Category</span>
+                            <h2 class="kpi-value" id="analysisLowestCatName">—</h2>
+                            <div class="kpi-detail-badge badge-green" id="analysisLowestBadge">$0.00 (0.0%)</div>
+                        </div>
+                    </div>
+
+                    <!-- Tracked Categories -->
+                    <div class="analysis-kpi-card card-ratio">
+                        <div class="kpi-icon-bubble">🏷️</div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Expense Categories</span>
+                            <h2 class="kpi-value" id="analysisTrackedCount">5</h2>
+                            <span class="kpi-subtext">Food, Shopping, Travel, Education & Bills</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart.js Visual Analytics Grid: Pie Chart & Bar Chart -->
+                <div class="analysis-charts-grid">
+                    <!-- Chart 1: Category Spending Breakdown (Chart.js Pie Chart) -->
+                    <div class="panel-card chartjs-panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Spending Breakdown by Category</h3>
+                                <p>Interactive Chart.js pie chart showing percentage allocation</p>
+                            </div>
+                        </div>
+                        <div class="chartjs-wrapper">
+                            <canvas id="chartJsSpendingPie"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 2: Monthly Income vs Expense (Chart.js Bar Chart) -->
+                    <div class="panel-card chartjs-panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>Monthly Cash Flow Comparison</h3>
+                                <p>Interactive Chart.js bar chart of income vs. expense trends</p>
+                            </div>
+                        </div>
+                        <div class="chartjs-wrapper">
+                            <canvas id="chartJsMonthlyBar"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Category Expense Breakdown Table -->
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Category-Wise Expense Breakdown</h3>
+                            <p>Detailed breakdown of Food, Shopping, Travel, Education, Bills & other categories</p>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="styled-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Progress & Allocation</th>
+                                    <th class="text-right">Total Spent</th>
+                                    <th class="text-right">% of Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analysisCategoryTableBody">
+                                <!-- Populated dynamically from Java Collections -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </div>

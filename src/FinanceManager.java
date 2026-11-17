@@ -313,6 +313,9 @@ public class FinanceManager {
         // Savings Goal Summary
         sb.append(",\"savingsGoalSummary\":").append(getSavingsGoalsSummaryJson());
 
+        // Smart Spending Analysis Summary
+        sb.append(",\"spendingAnalysis\":").append(getSpendingAnalysisJson());
+
         sb.append("}");
         return sb.toString();
     }
@@ -511,6 +514,102 @@ public class FinanceManager {
                 "\"totalSaved\":" + String.format(Locale.US, "%.2f", totalSaved) + "," +
                 "\"overallProgress\":" + String.format(Locale.US, "%.1f", overallPct) +
                 "}";
+    }
+
+    /**
+     * ========================================================================
+     * SMART SPENDING ANALYSIS (Collections: HashMap & ArrayList)
+     * ========================================================================
+     * Calculates highest/lowest spending categories and generates smart suggestions.
+     * Easy to explain during college viva.
+     */
+    public synchronized String getSpendingAnalysisJson() {
+        HashMap<String, Double> categoryMap = getExpenseByCategory();
+        double totalExpense = getTotalExpenses();
+        double totalIncome = getTotalIncome();
+        double balance = getCurrentBalance();
+        double savingsRate = totalIncome > 0 ? Math.max(0, (balance / totalIncome) * 100) : 0;
+
+        String highestCategory = "None";
+        double highestAmount = 0.0;
+        String lowestCategory = "None";
+        double lowestAmount = Double.MAX_VALUE;
+
+        for (Map.Entry<String, Double> entry : categoryMap.entrySet()) {
+            double amt = entry.getValue();
+            if (amt > highestAmount) {
+                highestAmount = amt;
+                highestCategory = entry.getKey();
+            }
+            if (amt < lowestAmount && amt > 0) {
+                lowestAmount = amt;
+                lowestCategory = entry.getKey();
+            }
+        }
+
+        if (lowestAmount == Double.MAX_VALUE) {
+            lowestAmount = 0.0;
+            lowestCategory = "None";
+        }
+
+        // Generate simple, rule-based smart suggestions using ArrayList
+        ArrayList<String> suggestions = new ArrayList<>();
+
+        if (!highestCategory.equals("None")) {
+            suggestions.add("You spent the most on " + highestCategory + " ($" + String.format(Locale.US, "%.2f", highestAmount) + ") this month.");
+        }
+
+        double shoppingAmt = categoryMap.getOrDefault("Shopping", 0.0);
+        if (shoppingAmt > 100.0) {
+            suggestions.add("Your shopping expenses are relatively high at $" + String.format(Locale.US, "%.2f", shoppingAmt) + ". Consider reviewing non-essential purchases.");
+        }
+
+        double foodAmt = categoryMap.getOrDefault("Food", 0.0);
+        if (totalExpense > 0 && (foodAmt / totalExpense) >= 0.30) {
+            suggestions.add("Food accounts for " + String.format(Locale.US, "%.0f", (foodAmt / totalExpense) * 100) + "% of total expenses. Preparing home meals can boost savings.");
+        }
+
+        if (savingsRate >= 40.0) {
+            suggestions.add("Great! You maintained a healthy " + String.format(Locale.US, "%.1f", savingsRate) + "% savings rate this month.");
+        } else {
+            suggestions.add("Try saving more by reducing unnecessary expenses to build a safety net.");
+        }
+
+        if (!lowestCategory.equals("None") && !lowestCategory.equals(highestCategory)) {
+            suggestions.add("Your lowest spending was on " + lowestCategory + " ($" + String.format(Locale.US, "%.2f", lowestAmount) + "), keeping costs well controlled there.");
+        }
+
+        // Build clean JSON
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        sb.append("\"totalExpenses\":").append(String.format(Locale.US, "%.2f", totalExpense)).append(",");
+        sb.append("\"highestCategory\":\"").append(escapeJson(highestCategory)).append("\",");
+        sb.append("\"highestAmount\":").append(String.format(Locale.US, "%.2f", highestAmount)).append(",");
+        sb.append("\"highestPercentage\":").append(totalExpense > 0 ? String.format(Locale.US, "%.1f", (highestAmount / totalExpense) * 100) : "0.0").append(",");
+        sb.append("\"lowestCategory\":\"").append(escapeJson(lowestCategory)).append("\",");
+        sb.append("\"lowestAmount\":").append(String.format(Locale.US, "%.2f", lowestAmount)).append(",");
+        sb.append("\"lowestPercentage\":").append(totalExpense > 0 ? String.format(Locale.US, "%.1f", (lowestAmount / totalExpense) * 100) : "0.0").append(",");
+        
+        // Category breakdown from HashMap
+        sb.append("\"categoryExpenses\":{");
+        int idx = 0;
+        for (Map.Entry<String, Double> e : categoryMap.entrySet()) {
+            if (idx > 0) sb.append(",");
+            sb.append("\"").append(escapeJson(e.getKey())).append("\":").append(String.format(Locale.US, "%.2f", e.getValue()));
+            idx++;
+        }
+        sb.append("},");
+
+        // Suggestions array from ArrayList
+        sb.append("\"suggestions\":[");
+        for (int i = 0; i < suggestions.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append("\"").append(escapeJson(suggestions.get(i))).append("\"");
+        }
+        sb.append("]");
+
+        sb.append("}");
+        return sb.toString();
     }
 
     private String escapeJson(String s) {

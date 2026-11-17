@@ -2279,6 +2279,237 @@ body {
     }
 }
 
+/* ==========================================================================
+   SMART SPENDING ANALYSIS STYLES
+   ========================================================================== */
+
+.analysis-hero-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 28px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+}
+
+.analysis-hero-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.analysis-hero-icon {
+    font-size: 2.2rem;
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 148, 136, 0.12);
+    border-radius: var(--radius-lg);
+}
+
+.analysis-hero-content h2 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.analysis-hero-content p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+/* Smart Suggestions Panel */
+.analysis-suggestions-panel {
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.04) 0%, rgba(20, 184, 166, 0.01) 100%);
+}
+
+.suggestions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.suggestion-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--teal-600);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: var(--shadow-xs);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.suggestion-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.suggestion-card.suggestion-warning {
+    border-left-color: #f59e0b;
+}
+
+.suggestion-card.suggestion-success {
+    border-left-color: #10b981;
+}
+
+.suggestion-icon {
+    font-size: 1.3rem;
+    line-height: 1.2;
+    flex-shrink: 0;
+}
+
+.suggestion-text {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.45;
+}
+
+/* 4 Spending KPI Cards */
+.analysis-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.analysis-kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.analysis-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.kpi-icon-bubble {
+    width: 44px;
+    height: 44px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.kpi-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.kpi-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+}
+
+.kpi-value {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.kpi-subtext {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
+
+.kpi-detail-badge {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    background: rgba(13, 148, 136, 0.12);
+    color: var(--teal-700);
+    border-radius: var(--radius-full);
+}
+
+.kpi-detail-badge.badge-green {
+    background: rgba(16, 185, 129, 0.14);
+    color: #065f46;
+}
+
+[data-theme="dark"] .kpi-detail-badge.badge-green {
+    color: #34d399;
+}
+
+/* Charts Grid */
+.analysis-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr;
+    gap: 22px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 950px) {
+    .analysis-charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chartjs-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.chartjs-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 290px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+
+.cat-progress-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cat-track-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    min-width: 80px;
+}
+
+.cat-fill-bar {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--teal-500), var(--teal-600));
+}
+
 /* Responsive Breakpoints */
 @media (max-width: 768px) {
     .layout-wrapper {

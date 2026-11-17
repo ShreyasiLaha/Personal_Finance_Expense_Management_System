@@ -82,6 +82,7 @@ public class Main {
             server.createContext("/api/transactions", new TransactionsHandler());
             server.createContext("/api/budgets", new BudgetsHandler());
             server.createContext("/api/goals", new GoalsHandler());
+            server.createContext("/api/analysis", new AnalysisHandler());
             server.createContext("/api/delete", new DeleteHandler());
             server.createContext("/api/reset", new ResetHandler());
             server.createContext("/api/export", new ExportHandler());
@@ -395,6 +396,23 @@ public class Main {
             } else {
                 sendJson(exchange, 405, "{\"error\":\"Method not allowed\"}");
             }
+        }
+    }
+
+    // ========================================================================
+    // HTTP HANDLER: Smart Spending Analysis (/api/analysis)
+    // ========================================================================
+    private class AnalysisHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            addCorsHeaders(exchange);
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            String json = financeManager.getSpendingAnalysisJson();
+            sendJson(exchange, 200, json);
         }
     }
 

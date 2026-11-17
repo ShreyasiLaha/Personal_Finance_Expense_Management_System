@@ -26,10 +26,11 @@ document.addEventListener("DOMContentLoaded", () => {
         "Other"
     ];
 
-    const TEAL_CHART_COLORS = [
-        "#0d9488", "#14b8a6", "#2dd4bf", "#0ea5e9", "#f59e0b",
-        "#ef4444", "#8b5cf6", "#ec4899", "#64748b"
+    const PASTEL_CHART_COLORS = [
+        "#f472b6", "#c084fc", "#fb923c", "#38bdf8", "#4ade80",
+        "#facc15", "#f87171", "#a78bfa", "#fdba74"
     ];
+    const TEAL_CHART_COLORS = PASTEL_CHART_COLORS;
 
     // ------------------------------------------------------------------------
     // DOM Element References
@@ -156,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ------------------------------------------------------------------------
-    // THEME SWITCHER (Teal, Dark, Indigo, Ocean)
+    // THEME SWITCHER (Blush, Lavender, Peach, Matcha, Dark)
     // ------------------------------------------------------------------------
     const themeDots = document.querySelectorAll(".theme-dot");
 
@@ -173,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    const savedTheme = localStorage.getItem("preferred_theme") || "teal";
+    const savedTheme = localStorage.getItem("preferred_theme") || "blush";
     setTheme(savedTheme);
 
     themeDots.forEach(dot => {
@@ -208,37 +209,37 @@ document.addEventListener("DOMContentLoaded", () => {
         // Update Topbar Title
         switch (targetSectionId) {
             case "section-landing":
-                pageHeading.textContent = "Welcome to FinancePulse";
-                pageSubheading.textContent = "Your smart, college-ready Personal Finance & Expense Management System.";
+                pageHeading.textContent = "FinancePulse ♡";
+                pageSubheading.textContent = "Your aesthetic lifestyle personal budgeting space ✨";
                 break;
             case "section-dashboard":
-                pageHeading.textContent = "Financial Dashboard";
-                pageSubheading.textContent = "Welcome back! Here is your current monetary snapshot.";
+                pageHeading.textContent = "Hello, Sunshine! ♡";
+                pageSubheading.textContent = "Welcome back to your aesthetic financial snapshot ✨";
                 break;
             case "section-add":
-                pageHeading.textContent = "Add Transaction";
-                pageSubheading.textContent = "Record a new income deposit or expense payout.";
+                pageHeading.textContent = "Record Transaction ♡";
+                pageSubheading.textContent = "Plant a new spending or earning seed in your ledger 🌱";
                 break;
             case "section-history":
-                pageHeading.textContent = "Transaction History";
-                pageSubheading.textContent = "Browse, filter, and manage your full list of transactions.";
+                pageHeading.textContent = "Transaction Diary ♡";
+                pageSubheading.textContent = "Review and reflect on your past money moments 📖";
                 break;
             case "section-summary":
-                pageHeading.textContent = "Monthly & Category Summary";
-                pageSubheading.textContent = "Detailed breakdown of monthly spending and category analysis.";
+                pageHeading.textContent = "Monthly Overview ♡";
+                pageSubheading.textContent = "A gentle breakdown of where your funds flow each month 🌸";
                 break;
             case "section-budgets":
-                pageHeading.textContent = "Budget Alert & Control Center";
-                pageSubheading.textContent = "Set category spending limits and monitor automated budget alerts.";
+                pageHeading.textContent = "Budget Guardrails ♡";
+                pageSubheading.textContent = "Keep your spending cozy and within mindful limits 🎀";
                 break;
             case "section-goals":
-                pageHeading.textContent = "Savings Goal Tracker";
-                pageSubheading.textContent = "Track targets, log savings deposits, and celebrate your financial milestones.";
+                pageHeading.textContent = "Dream Board & Goals ♡";
+                pageSubheading.textContent = "Every rupee brings you closer to what you adore ✨";
                 loadSavingsGoals();
                 break;
             case "section-analysis":
-                pageHeading.textContent = "Smart Spending Analysis";
-                pageSubheading.textContent = "Data-driven insights, category comparisons, and automated suggestions.";
+                pageHeading.textContent = "Smart Spending Analysis ♡";
+                pageSubheading.textContent = "Pastel charts & loving suggestions to guide your habits 💡";
                 loadSpendingAnalysis();
                 break;
         }
@@ -1502,10 +1503,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const ctx = chartJsSpendingPie.getContext("2d");
-        const colors = [
-            "#0d9488", "#14b8a6", "#2dd4bf", "#0ea5e9", "#f59e0b",
-            "#ef4444", "#8b5cf6", "#ec4899", "#64748b"
-        ];
+        const colors = PASTEL_CHART_COLORS;
 
         chartJsSpendingPieInstance = new Chart(ctx, {
             type: "pie",
@@ -1514,7 +1512,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 datasets: [{
                     data: values,
                     backgroundColor: colors.slice(0, labels.length),
-                    borderWidth: 2,
+                    borderWidth: 3,
                     borderColor: "#ffffff"
                 }]
             },
@@ -1525,8 +1523,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     legend: {
                         position: "bottom",
                         labels: {
-                            font: { family: "'Plus Jakarta Sans', sans-serif", size: 12 },
-                            padding: 12
+                            font: { family: "'Poppins', 'Nunito', sans-serif", size: 12 },
+                            padding: 14,
+                            usePointStyle: true,
+                            pointStyle: "circle"
                         }
                     },
                     tooltip: {
@@ -1572,14 +1572,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     {
                         label: "Income ($)",
                         data: incomeData,
-                        backgroundColor: "#0d9488",
-                        borderRadius: 4
+                        backgroundColor: "#f472b6",
+                        borderRadius: 8
                     },
                     {
                         label: "Expense ($)",
                         data: expenseData,
-                        backgroundColor: "#ef4444",
-                        borderRadius: 4
+                        backgroundColor: "#c084fc",
+                        borderRadius: 8
                     }
                 ]
             },
@@ -1589,13 +1589,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 scales: {
                     x: {
                         grid: { display: false },
-                        ticks: { font: { family: "'Plus Jakarta Sans', sans-serif" } }
+                        ticks: { font: { family: "'Poppins', 'Nunito', sans-serif" } }
                     },
                     y: {
                         beginAtZero: true,
                         ticks: {
                             callback: function(value) { return "$" + value; },
-                            font: { family: "'Plus Jakarta Sans', sans-serif" }
+                            font: { family: "'Poppins', 'Nunito', sans-serif" }
                         }
                     }
                 },
@@ -1603,8 +1603,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     legend: {
                         position: "top",
                         labels: {
-                            font: { family: "'Plus Jakarta Sans', sans-serif", size: 12 },
-                            padding: 14
+                            font: { family: "'Poppins', 'Nunito', sans-serif", size: 12 },
+                            padding: 14,
+                            usePointStyle: true,
+                            pointStyle: "circle"
                         }
                     },
                     tooltip: {

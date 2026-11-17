@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Finance & Expense Management System</title>
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Poppins & Nunito -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <!-- Chart.js for Smart Spending Analysis (Pie & Bar charts) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -29,17 +29,18 @@
                     </svg>
                 </div>
                 <div>
-                    <h2>FinancePulse</h2>
-                    <span class="landing-brand-sub">Personal Finance Management System</span>
+                    <h2>FinancePulse ♡</h2>
+                    <span class="landing-brand-sub">Aesthetic Budget Planner & Expense Tracker</span>
                 </div>
             </div>
             <div class="landing-nav-actions">
                 <div class="theme-picker-group">
-                    <span class="theme-picker-title">Theme:</span>
-                    <button class="theme-dot dot-teal active" data-theme="teal" title="Teal & Mint (Default)"></button>
-                    <button class="theme-dot dot-dark" data-theme="dark" title="Midnight Dark"></button>
-                    <button class="theme-dot dot-indigo" data-theme="indigo" title="Royal Indigo"></button>
-                    <button class="theme-dot dot-ocean" data-theme="ocean" title="Ocean Blue"></button>
+                    <span class="theme-picker-title">Palette:</span>
+                    <button class="theme-dot dot-blush active" data-theme="blush" title="Blush Pink ♡"></button>
+                    <button class="theme-dot dot-lavender" data-theme="lavender" title="Soft Lavender 🌸"></button>
+                    <button class="theme-dot dot-peach" data-theme="peach" title="Sweet Peach 🍑"></button>
+                    <button class="theme-dot dot-matcha" data-theme="matcha" title="Matcha Mint 🍵"></button>
+                    <button class="theme-dot dot-dark" data-theme="dark" title="Velvet Midnight 🌙"></button>
                 </div>
                 <button class="btn btn-primary" id="landingNavEnterBtn">
                     Open Dashboard →
@@ -51,13 +52,13 @@
         <main class="landing-hero-container">
             <div class="hero-content">
                 <div class="landing-badge">
-                    <span class="badge-dot"></span> Java Web Project • OOP, File Handling & Budget Alerts
+                    <span class="badge-dot"></span> Mindful Money • Aesthetic Lifestyle Budgeting ✨
                 </div>
                 <h1 class="landing-main-title">
-                    Take Complete Control of Your <span class="gradient-text">Financial Future</span>
+                    Take Mindful Care of Your <span class="gradient-text">Financial Life ♡</span>
                 </h1>
                 <p class="landing-main-desc">
-                    A beginner-friendly, framework-free web system designed to track income, categorize expenses (Food, Shopping, Travel, Education & Bills), monitor automated budget alerts, and visualize monthly cash flow with pure Java.
+                    A dreamy, Pinterest-inspired personal finance sanctuary. Track daily expenses with soft pastel clarity, nurture your savings dreams, and manage your budget effortlessly with pure Java.
                 </p>
 
                 <!-- The Primary Action Buttons (One Option to Open Others) -->
@@ -179,8 +180,8 @@
                     </svg>
                 </div>
                 <div class="brand-text">
-                    <h2>FinancePulse</h2>
-                    <span>Expense Manager</span>
+                    <h2>FinancePulse ♡</h2>
+                    <span>Aesthetic Planner</span>
                 </div>
             </div>
 
@@ -284,16 +285,17 @@
             <!-- Top Header Bar -->
             <header class="topbar">
                 <div class="topbar-title">
-                    <h1 id="pageHeading">Financial Dashboard</h1>
-                    <p id="pageSubheading">Welcome back! Here is your current monetary snapshot.</p>
+                    <h1 id="pageHeading">Hello, Sunshine! ♡</h1>
+                    <p id="pageSubheading">Welcome back to your aesthetic financial snapshot ✨</p>
                 </div>
                 <div class="topbar-actions">
                     <div class="theme-picker-group">
-                        <span class="theme-picker-title">Theme:</span>
-                        <button class="theme-dot dot-teal active" data-theme="teal" title="Teal & Mint"></button>
-                        <button class="theme-dot dot-dark" data-theme="dark" title="Midnight Dark"></button>
-                        <button class="theme-dot dot-indigo" data-theme="indigo" title="Royal Indigo"></button>
-                        <button class="theme-dot dot-ocean" data-theme="ocean" title="Ocean Blue"></button>
+                        <span class="theme-picker-title">Palette:</span>
+                        <button class="theme-dot dot-blush active" data-theme="blush" title="Blush Pink ♡"></button>
+                        <button class="theme-dot dot-lavender" data-theme="lavender" title="Soft Lavender 🌸"></button>
+                        <button class="theme-dot dot-peach" data-theme="peach" title="Sweet Peach 🍑"></button>
+                        <button class="theme-dot dot-matcha" data-theme="matcha" title="Matcha Mint 🍵"></button>
+                        <button class="theme-dot dot-dark" data-theme="dark" title="Velvet Midnight 🌙"></button>
                     </div>
                     <button class="btn btn-primary" id="quickAddBtn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -317,6 +319,13 @@
                         <p id="alertBannerMessage">One or more categories have exceeded their limit.</p>
                     </div>
                     <button class="btn btn-outline-sm btn-alert-action" id="bannerManageBudgetsBtn">Review Budgets →</button>
+                </div>
+
+                <!-- Aesthetic Motivational Quote Strip -->
+                <div class="aesthetic-quote-strip">
+                    <span class="quote-sparkle">✨</span>
+                    <span class="quote-text">Small steps every day lead to big dreams ♡</span>
+                    <span class="quote-sparkle">🌸</span>
                 </div>
 
                 <!-- Summary Cards: Balance, Income, Expense, Savings -->

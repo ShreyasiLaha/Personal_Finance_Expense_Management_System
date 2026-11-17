@@ -33,7 +33,7 @@ public class FinanceManager {
     /**
      * Loads transactions and budgets from file into our Collections
      */
-    public synchronized void loadData() {
+    public final synchronized void loadData() {
         this.transactions.clear();
         this.transactions.addAll(fileManager.loadTransactions());
 

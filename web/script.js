@@ -2,8 +2,350 @@
  * ============================================================================
  * PERSONAL FINANCE & EXPENSE MANAGEMENT SYSTEM - FRONTEND SCRIPT
  * ============================================================================
- * Handles UI interactions, API calls to Java HTTP server, charts, and routing.
+ * Handles UI interactions, API calls to Java HTTP server, charts, routing,
+ * and client-side fallback persistence for Vercel / GitHub Pages deployment.
  */
+
+// ============================================================================
+// DUAL-MODE API ADAPTER: Java Backend (Local) <--> ClientStorage (Vercel/Static)
+// ============================================================================
+(function initApiAdapter() {
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    let backendActive = isLocalhost;
+
+    if (isLocalhost) {
+        fetch("/api/summary", { method: "GET", cache: "no-store" })
+            .then(res => { backendActive = res.ok; })
+            .catch(() => { backendActive = false; });
+    } else {
+        backendActive = false; // Always use high-performance client storage on Vercel / GitHub Pages
+    }
+
+    const originalFetch = window.fetch.bind(window);
+
+    const STORAGE_KEY_TRX = "finance_pulse_transactions";
+    const STORAGE_KEY_BUDGETS = "finance_pulse_budgets";
+    const STORAGE_KEY_GOALS = "finance_pulse_goals";
+
+    function getStored(key, defaultVal) {
+        try {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : defaultVal;
+        } catch (e) {
+            return defaultVal;
+        }
+    }
+
+    function setStored(key, val) {
+        try {
+            localStorage.setItem(key, JSON.stringify(val));
+        } catch (e) {}
+    }
+
+    const DEFAULT_TRANSACTIONS = [
+        { id: "TRX-001", type: "INCOME", title: "Monthly Tech Salary", amount: 4500.0, category: "Salary", date: "2026-11-01", notes: "Regular salary", detail: "Direct Deposit" },
+        { id: "TRX-002", type: "INCOME", title: "Freelance UI Project", amount: 850.0, category: "Freelance", date: "2026-11-05", notes: "Website design contract", detail: "Bank Transfer" },
+        { id: "TRX-003", type: "EXPENSE", title: "Organic Grocery Haul", amount: 140.0, category: "Food", date: "2026-11-03", notes: "Fresh fruits & pantry essentials", detail: "Debit Card" },
+        { id: "TRX-004", type: "EXPENSE", title: "Matcha Latte & Brunch", amount: 80.0, category: "Food", date: "2026-11-07", notes: "Weekend cafe date", detail: "Credit Card" },
+        { id: "TRX-005", type: "EXPENSE", title: "Pastel Wool Cardigan", amount: 120.0, category: "Shopping", date: "2026-11-08", notes: "Cozy autumn wardrobe", detail: "Credit Card" },
+        { id: "TRX-006", type: "EXPENSE", title: "Monthly Transit Pass", amount: 60.0, category: "Travel", date: "2026-11-10", notes: "Metro & city buses", detail: "Metro Card" },
+        { id: "TRX-007", type: "EXPENSE", title: "Full-Stack Web Bootcamp", amount: 89.99, category: "Education", date: "2026-11-12", notes: "Java & web certifications", detail: "UPI" },
+        { id: "TRX-008", type: "EXPENSE", title: "High-Speed WiFi & Cloud", amount: 145.0, category: "Bills", date: "2026-11-14", notes: "Fiber internet & phone plan", detail: "Auto Debit" }
+    ];
+
+    const DEFAULT_BUDGETS = {
+        "Overall": 900.0,
+        "Food": 275.0,
+        "Shopping": 150.0,
+        "Travel": 80.0,
+        "Education": 100.0,
+        "Bills": 180.0,
+        "Other": 100.0
+    };
+
+    const DEFAULT_GOALS = [
+        { id: "GOAL-001", name: "New iPhone 16 Pro", targetAmount: 1199.0, savedAmount: 1199.0, targetDate: "2026-11-15", category: "Gadgets" },
+        { id: "GOAL-002", name: "MacBook Pro M4", targetAmount: 1799.0, savedAmount: 1250.0, targetDate: "2026-12-25", category: "Laptop" },
+        { id: "GOAL-003", name: "Japan Cherry Blossom Trip", targetAmount: 2500.0, savedAmount: 850.0, targetDate: "2027-04-10", category: "Travel" },
+        { id: "GOAL-004", name: "Emergency Nest Egg", targetAmount: 3000.0, savedAmount: 1800.0, targetDate: "2027-06-30", category: "Emergency" }
+    ];
+
+    function seedIfEmpty() {
+        if (!localStorage.getItem(STORAGE_KEY_TRX)) setStored(STORAGE_KEY_TRX, DEFAULT_TRANSACTIONS);
+        if (!localStorage.getItem(STORAGE_KEY_BUDGETS)) setStored(STORAGE_KEY_BUDGETS, DEFAULT_BUDGETS);
+        if (!localStorage.getItem(STORAGE_KEY_GOALS)) setStored(STORAGE_KEY_GOALS, DEFAULT_GOALS);
+    }
+    seedIfEmpty();
+
+    function computeSummary() {
+        const transactions = getStored(STORAGE_KEY_TRX, DEFAULT_TRANSACTIONS);
+        const budgets = getStored(STORAGE_KEY_BUDGETS, DEFAULT_BUDGETS);
+        const goals = getStored(STORAGE_KEY_GOALS, DEFAULT_GOALS);
+
+        let totalIncome = 0;
+        let totalExpense = 0;
+        const expenseByCategory = {};
+        const monthlyExpenseSummary = {};
+        const monthlyTotals = {};
+
+        transactions.forEach(t => {
+            const amt = parseFloat(t.amount) || 0;
+            const ym = (t.date || "").substring(0, 7) || "2026-11";
+            if (!monthlyTotals[ym]) monthlyTotals[ym] = { income: 0, expense: 0 };
+
+            if (t.type === "INCOME") {
+                totalIncome += amt;
+                monthlyTotals[ym].income += amt;
+            } else {
+                totalExpense += amt;
+                monthlyTotals[ym].expense += amt;
+                expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + amt;
+                monthlyExpenseSummary[ym] = (monthlyExpenseSummary[ym] || 0) + amt;
+            }
+        });
+
+        const currentBalance = totalIncome - totalExpense;
+        const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
+
+        const budgetSummary = Object.entries(budgets).map(([cat, limit]) => {
+            const spent = cat === "Overall" ? totalExpense : (expenseByCategory[cat] || 0);
+            const remaining = limit - spent;
+            const percentage = limit > 0 ? (spent / limit) * 100 : 0;
+            let status = "ON_TRACK";
+            let alert = "";
+            if (percentage >= 100) {
+                status = "DANGER";
+                alert = `Alert: ${cat} budget exceeded!`;
+            } else if (percentage >= 80) {
+                status = "WARNING";
+                alert = `Warning: ${percentage.toFixed(0)}% of ${cat} budget reached.`;
+            }
+            return {
+                category: cat,
+                limit: limit,
+                spent: spent,
+                remaining: remaining,
+                percentage: parseFloat(percentage.toFixed(1)),
+                status: status,
+                alert: alert
+            };
+        });
+
+        let totalTarget = 0;
+        let totalSaved = 0;
+        let achievedGoals = 0;
+        goals.forEach(g => {
+            const tgt = parseFloat(g.targetAmount) || 0;
+            const svd = parseFloat(g.savedAmount) || 0;
+            totalTarget += tgt;
+            totalSaved += svd;
+            if (svd >= tgt && tgt > 0) achievedGoals++;
+        });
+        const overallProgress = totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
+
+        const catEntries = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
+        const highestCat = catEntries.length > 0 ? catEntries[0][0] : "None";
+        const highestAmt = catEntries.length > 0 ? catEntries[0][1] : 0;
+        const highestPct = totalExpense > 0 ? (highestAmt / totalExpense) * 100 : 0;
+
+        const lowestCat = catEntries.length > 0 ? catEntries[catEntries.length - 1][0] : "None";
+        const lowestAmt = catEntries.length > 0 ? catEntries[catEntries.length - 1][1] : 0;
+        const lowestPct = totalExpense > 0 ? (lowestAmt / totalExpense) * 100 : 0;
+
+        const suggestions = [];
+        if (highestCat !== "None") {
+            suggestions.push(`You spent the most on ${highestCat} ($${highestAmt.toFixed(2)}) this month.`);
+        }
+        if ((expenseByCategory["Shopping"] || 0) > 100) {
+            suggestions.push(`Your shopping expenses are relatively high at $${(expenseByCategory["Shopping"] || 0).toFixed(2)}. Consider mindful purchasing.`);
+        }
+        if (highestPct > 30) {
+            suggestions.push(`${highestCat} accounts for ${highestPct.toFixed(0)}% of total expenses. Preparing home meals will boost your savings.`);
+        }
+        if (savingsRate > 50) {
+            suggestions.push(`Great job! You maintained an inspiring ${savingsRate.toFixed(1)}% savings rate.`);
+        } else {
+            suggestions.push("Try boosting your savings rate by setting aside funds right on payday.");
+        }
+        if (lowestCat !== "None") {
+            suggestions.push(`Your lowest spending was on ${lowestCat} ($${lowestAmt.toFixed(2)}), keeping costs well controlled there.`);
+        }
+
+        return {
+            totalIncome: totalIncome,
+            totalExpense: totalExpense,
+            currentBalance: currentBalance,
+            savingsRate: parseFloat(savingsRate.toFixed(1)),
+            transactionCount: transactions.length,
+            expenseByCategory: expenseByCategory,
+            monthlyExpenseSummary: monthlyExpenseSummary,
+            monthlyTotals: monthlyTotals,
+            budgetSummary: budgetSummary,
+            savingsGoalSummary: {
+                totalGoals: goals.length,
+                achievedGoals: achievedGoals,
+                totalTarget: totalTarget,
+                totalSaved: totalSaved,
+                overallProgress: parseFloat(overallProgress.toFixed(1))
+            },
+            spendingAnalysis: {
+                totalExpenses: totalExpense,
+                highestCategory: highestCat,
+                highestAmount: highestAmt,
+                highestPercentage: parseFloat(highestPct.toFixed(1)),
+                lowestCategory: lowestCat,
+                lowestAmount: lowestAmt,
+                lowestPercentage: parseFloat(lowestPct.toFixed(1)),
+                categoryExpenses: expenseByCategory,
+                suggestions: suggestions
+            }
+        };
+    }
+
+    window.fetch = async function(url, options = {}) {
+        const urlStr = typeof url === "string" ? url : (url.url || "");
+        if (!urlStr.startsWith("/api/")) {
+            return originalFetch(url, options);
+        }
+
+        if (backendActive) {
+            try {
+                const res = await originalFetch(url, options);
+                if (res.ok) return res;
+            } catch (e) {
+                backendActive = false;
+            }
+        }
+
+        const method = (options.method || "GET").toUpperCase();
+        const parsedUrl = new URL(urlStr, window.location.origin);
+        const path = parsedUrl.pathname;
+        const params = parsedUrl.searchParams;
+
+        let resData = {};
+        const status = 200;
+
+        if (path === "/api/summary") {
+            resData = computeSummary();
+        } else if (path === "/api/transactions") {
+            const list = getStored(STORAGE_KEY_TRX, DEFAULT_TRANSACTIONS);
+            if (method === "GET") {
+                const search = (params.get("search") || "").toLowerCase();
+                const type = params.get("type") || "ALL";
+                const category = params.get("category") || "ALL";
+                resData = list.filter(t => {
+                    const matchSearch = !search ||
+                        (t.title || "").toLowerCase().includes(search) ||
+                        (t.notes || "").toLowerCase().includes(search) ||
+                        (t.category || "").toLowerCase().includes(search);
+                    const matchType = type === "ALL" || t.type === type;
+                    const matchCat = category === "ALL" || t.category === category;
+                    return matchSearch && matchType && matchCat;
+                });
+            } else if (method === "POST") {
+                const body = JSON.parse(options.body || "{}");
+                if (body.id) {
+                    const idx = list.findIndex(t => t.id === body.id);
+                    if (idx >= 0) list[idx] = { ...list[idx], ...body };
+                } else {
+                    body.id = "TRX-" + Date.now();
+                    list.unshift(body);
+                }
+                setStored(STORAGE_KEY_TRX, list);
+                resData = body;
+            } else if (method === "DELETE") {
+                const id = params.get("id");
+                const next = list.filter(t => t.id !== id);
+                setStored(STORAGE_KEY_TRX, next);
+                resData = { success: true, id: id };
+            }
+        } else if (path === "/api/budgets") {
+            const budgets = getStored(STORAGE_KEY_BUDGETS, DEFAULT_BUDGETS);
+            if (method === "GET") {
+                resData = computeSummary().budgetSummary;
+            } else if (method === "POST") {
+                const body = JSON.parse(options.body || "{}");
+                const cat = body.category || "Overall";
+                const limit = parseFloat(body.limit || body.limitAmount || 0);
+                budgets[cat] = limit;
+                setStored(STORAGE_KEY_BUDGETS, budgets);
+                resData = computeSummary().budgetSummary;
+            }
+        } else if (path === "/api/goals") {
+            const goals = getStored(STORAGE_KEY_GOALS, DEFAULT_GOALS);
+            if (method === "GET") {
+                resData = goals.map(g => {
+                    const target = parseFloat(g.targetAmount) || 0;
+                    const saved = parseFloat(g.savedAmount) || 0;
+                    const remaining = Math.max(0, target - saved);
+                    const pct = target > 0 ? (saved / target) * 100 : 0;
+                    return {
+                        ...g,
+                        targetAmount: target,
+                        savedAmount: saved,
+                        remainingAmount: remaining,
+                        percentage: parseFloat(pct.toFixed(1)),
+                        isAchieved: saved >= target && target > 0
+                    };
+                });
+            } else if (method === "POST") {
+                const body = JSON.parse(options.body || "{}");
+                if (body.action === "deposit" || body.depositAmount) {
+                    const id = body.id;
+                    const dep = parseFloat(body.depositAmount || body.amount || 0);
+                    const targetGoal = goals.find(g => g.id === id);
+                    if (targetGoal) {
+                        targetGoal.savedAmount = (parseFloat(targetGoal.savedAmount) || 0) + dep;
+                        setStored(STORAGE_KEY_GOALS, goals);
+                        resData = targetGoal;
+                    }
+                } else if (body.id) {
+                    const idx = goals.findIndex(g => g.id === body.id);
+                    if (idx >= 0) goals[idx] = { ...goals[idx], ...body };
+                    setStored(STORAGE_KEY_GOALS, goals);
+                    resData = body;
+                } else {
+                    body.id = "GOAL-" + Date.now();
+                    body.savedAmount = parseFloat(body.savedAmount || 0);
+                    body.targetAmount = parseFloat(body.targetAmount || 0);
+                    goals.push(body);
+                    setStored(STORAGE_KEY_GOALS, goals);
+                    resData = body;
+                }
+            } else if (method === "DELETE") {
+                const id = params.get("id");
+                const next = goals.filter(g => g.id !== id);
+                setStored(STORAGE_KEY_GOALS, next);
+                resData = { success: true, id: id };
+            }
+        } else if (path === "/api/analysis") {
+            resData = computeSummary().spendingAnalysis;
+        } else if (path === "/api/reset") {
+            setStored(STORAGE_KEY_TRX, DEFAULT_TRANSACTIONS);
+            setStored(STORAGE_KEY_BUDGETS, DEFAULT_BUDGETS);
+            setStored(STORAGE_KEY_GOALS, DEFAULT_GOALS);
+            resData = { message: "Sample data reset successfully" };
+        } else if (path === "/api/export") {
+            const list = getStored(STORAGE_KEY_TRX, DEFAULT_TRANSACTIONS);
+            let csv = "ID,Type,Title,Amount,Category,Date,Notes,Detail\n";
+            list.forEach(t => {
+                csv += `"${t.id}","${t.type}","${t.title}",${t.amount},"${t.category}","${t.date}","${t.notes || ''}","${t.detail || ''}"\n`;
+            });
+            return new Response(csv, {
+                status: 200,
+                headers: {
+                    "Content-Type": "text/csv",
+                    "Content-Disposition": 'attachment; filename="transactions.csv"'
+                }
+            });
+        }
+
+        return new Response(JSON.stringify(resData), {
+            status: status,
+            headers: { "Content-Type": "application/json" }
+        });
+    };
+})();
 
 document.addEventListener("DOMContentLoaded", () => {
     // ------------------------------------------------------------------------

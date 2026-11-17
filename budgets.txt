@@ -1,0 +1,9 @@
+# Category Budgets File
+# Format: CATEGORY|LIMIT_AMOUNT
+Overall|900.00
+Travel|80.00
+Education|100.00
+Shopping|150.00
+Food|300.00
+Bills|180.00
+Other|100.00

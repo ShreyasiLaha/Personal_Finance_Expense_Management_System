@@ -9,15 +9,20 @@ It demonstrates core **Object-Oriented Programming (OOP) concepts** and **Java F
 ## 🌟 Key Features
 
 1. **Financial Dashboard**: Real-time display of **Total Income**, **Total Expenses**, and **Current Balance** (Surplus/Deficit status).
-2. **Add Income & Expenses**: Record earnings and outlays with titles, dates, categories, payment methods, and notes.
-3. **Predefined & Custom Categories**:
+2. **Automated Budget Alert System**: Set category and overall spending limits; tracks live utilization with automated alert states:
+   - 🟢 **On Track** (`< 80%`)
+   - 🟡 **Warning** (`80% - 99%`)
+   - 🔴 **Exceeded** (`≥ 100%`)
+   - Live dashboard alert banner, sidebar warning badges, and real-time alerts when adding expenses that breach limits.
+3. **Add Income & Expenses**: Record earnings and outlays with titles, dates, categories, payment methods, and notes.
+4. **Predefined & Custom Categories**:
    - **Expenses**: `Food`, `Shopping`, `Travel`, `Education`, `Bills`, `Other`
    - **Income**: `Salary`, `Freelance`, `Investments`, `Bonus`, `Other`
-4. **Transaction History**: Searchable and filterable ledger with instant deletion and category filtering.
-5. **Monthly Expense Summary**: Aggregates and tracks month-by-month spending trends using Java Collections.
-6. **Visual Analytics**: Interactive Category Donut Chart and Monthly Cash Flow Bar Chart rendered with HTML5 Canvas.
-7. **CSV Data Export**: 1-click download of all transaction data.
-8. **Teal & White Theme**: Modern responsive layout featuring sidebar navigation, smooth animations, and hover effects.
+5. **Transaction History**: Searchable and filterable ledger with instant editing, deletion and category filtering.
+6. **Monthly Expense Summary**: Aggregates and tracks month-by-month spending trends using Java Collections.
+7. **Visual Analytics**: Interactive Category Donut Chart and Monthly Cash Flow Bar Chart rendered with HTML5 Canvas.
+8. **CSV Data Export**: 1-click download of all transaction data.
+9. **Teal & White Theme**: Modern responsive layout featuring sidebar navigation, multi-theme selector, smooth animations, and hover effects.
 
 ---
 
@@ -26,8 +31,8 @@ It demonstrates core **Object-Oriented Programming (OOP) concepts** and **Java F
 This project is structured specifically to showcase the four fundamental OOP principles:
 
 ### 1. Encapsulation
-- **Where**: Implemented in [`Transaction.java`](src/Transaction.java), [`Income.java`](src/Income.java), and [`Expense.java`](src/Expense.java).
-- **How**: All class variables (`id`, `title`, `amount`, `category`, `date`, `notes`, `source`, `paymentMethod`) are declared with `private` or `protected` access modifiers. 
+- **Where**: Implemented in [`Transaction.java`](src/Transaction.java), [`Income.java`](src/Income.java), [`Expense.java`](src/Expense.java), and [`Budget.java`](src/Budget.java).
+- **How**: All class variables (`id`, `title`, `amount`, `category`, `date`, `notes`, `source`, `paymentMethod`, `limitAmount`) are declared with `private` or `protected` access modifiers. 
 - Public `getter` and `setter` methods provide controlled, validated read and write access to these variables.
 
 ### 2. Inheritance
@@ -41,13 +46,13 @@ This project is structured specifically to showcase the four fundamental OOP pri
 - **Where**: Implemented in [`FinanceManager.java`](src/FinanceManager.java).
 - **How**:
   - `ArrayList<Transaction>`: Dynamically sized collection used to maintain the active list of transaction objects in memory.
-  - `HashMap<String, Double>`: Key-value map used to aggregate category-wise expense totals (`Food`, `Shopping`, `Travel`, `Education`, `Bills`) and calculate monthly spending summaries (`YYYY-MM` -> `Total`).
+  - `HashMap<String, Double>`: Key-value map used to aggregate category-wise expense totals (`Food`, `Shopping`, `Travel`, `Education`, `Bills`), calculate monthly spending summaries (`YYYY-MM` -> `Total`), and track category budget limits (`Food` -> `$300.00`).
 
 ### 4. File Handling
 - **Where**: Implemented in [`FileManager.java`](src/FileManager.java).
 - **How**:
-  - `FileReader` wrapped inside `BufferedReader`: Reads delimited records line-by-line from `transactions.txt`.
-  - `FileWriter` wrapped inside `BufferedWriter`: Persists new transactions and rewrites state efficiently without data corruption.
+  - `FileReader` wrapped inside `BufferedReader`: Reads delimited records line-by-line from `transactions.txt` and `budgets.txt`.
+  - `FileWriter` wrapped inside `BufferedWriter`: Persists new transactions and category budget limits efficiently without data corruption.
 
 ---
 
@@ -61,16 +66,18 @@ Personal_Finance_Expense_Management_System/
 │   ├── Transaction.java       # Abstract parent class (Encapsulation & Inheritance)
 │   ├── Income.java            # Child class for income transactions
 │   ├── Expense.java           # Child class for expense transactions
-│   ├── FinanceManager.java    # Business logic & calculations using ArrayList & HashMap
+│   ├── Budget.java            # Encapsulated Budget model (category & limit)
+│   ├── FinanceManager.java    # Business logic, budget alert calculation & collections
 │   └── FileManager.java       # File handling with FileReader, FileWriter, BufferedReader & BufferedWriter
 │
 ├── web/
 │   ├── index.html             # Dashboard UI with sidebar navigation & teal/white theme
 │   ├── style.css              # Styling, responsive layout, animations & cards
-│   └── script.js              # REST API connector, dynamic forms & canvas charts
+│   └── script.js              # REST API connector, budget alert system & canvas charts
 │
 ├── bin/                       # Compiled .class bytecode files
-├── transactions.txt           # Persistent text database
+├── transactions.txt           # Persistent text database for transactions
+├── budgets.txt                # Persistent text database for category limits
 └── README.md                  # Documentation and setup guide
 ```
 
@@ -93,7 +100,6 @@ Compile all Java files into the `bin/` directory:
 ```bash
 javac -d bin src/*.java
 ```
-*(On Windows PowerShell, you can also run: `javac -d bin src/Transaction.java src/Income.java src/Expense.java src/FileManager.java src/FinanceManager.java src/Main.java`)*
 
 ### 3. Run the Application
 Start the built-in web server:
@@ -134,9 +140,11 @@ The lightweight server exposes clean JSON endpoints used by the frontend:
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
 | `/` | `GET` | Serves `web/index.html` dashboard |
-| `/api/summary` | `GET` | Returns Current Balance, Total Income, Total Expenses, Category Breakdown (HashMap), and Monthly Summary |
+| `/api/summary` | `GET` | Returns Current Balance, Total Income, Total Expenses, Category Breakdown (HashMap), Monthly Summary, and Budget Statuses |
+| `/api/budgets` | `GET` | Returns category budget limits, amounts spent, percentages, and alert flags |
+| `/api/budgets` | `POST` | Sets or updates a category budget limit and saves to `budgets.txt` |
 | `/api/transactions` | `GET` | Returns transaction list (supports `?type=`, `?category=`, `?search=`) |
-| `/api/transactions` | `POST` | Creates a new Income or Expense record |
+| `/api/transactions` | `POST` | Creates a new Income or Expense record and returns real-time budget alert warning if limit breached |
 | `/api/transactions?id=...` | `DELETE` | Removes a transaction by ID and updates `transactions.txt` |
 | `/api/export` | `GET` | Downloads all records as a `.csv` file |
 | `/api/reset` | `POST` | Restores default sample data |

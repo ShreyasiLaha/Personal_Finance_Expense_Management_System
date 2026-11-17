@@ -78,6 +78,7 @@ public class Main {
             // REST API Endpoints
             server.createContext("/api/summary", new SummaryHandler());
             server.createContext("/api/transactions", new TransactionsHandler());
+            server.createContext("/api/budgets", new BudgetsHandler());
             server.createContext("/api/delete", new DeleteHandler());
             server.createContext("/api/reset", new ResetHandler());
             server.createContext("/api/export", new ExportHandler());
@@ -237,7 +238,12 @@ public class Main {
 
                 boolean added = financeManager.addTransaction(t);
                 if (added) {
-                    sendJson(exchange, 201, t.toJson());
+                    String alert = "EXPENSE".equalsIgnoreCase(type) ? financeManager.checkExpenseAlert(category, amount) : null;
+                    String json = t.toJson();
+                    if (alert != null) {
+                        json = json.substring(0, json.length() - 1) + ",\"budgetAlert\":\"" + alert.replace("\"", "\\\"") + "\"}";
+                    }
+                    sendJson(exchange, 201, json);
                 } else {
                     sendJson(exchange, 400, "{\"error\":\"Could not add transaction\"}");
                 }
@@ -250,6 +256,45 @@ public class Main {
                     sendJson(exchange, 200, "{\"success\":true,\"id\":\"" + id + "\"}");
                 } else {
                     sendJson(exchange, 404, "{\"error\":\"Transaction not found\"}");
+                }
+            } else {
+                sendJson(exchange, 405, "{\"error\":\"Method not allowed\"}");
+            }
+        }
+    }
+
+    // ========================================================================
+    // HTTP HANDLER: Budgets & Alerts (/api/budgets)
+    // ========================================================================
+    private class BudgetsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            addCorsHeaders(exchange);
+            String method = exchange.getRequestMethod().toUpperCase();
+
+            if ("OPTIONS".equals(method)) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("GET".equals(method)) {
+                String json = financeManager.getBudgetSummaryJson();
+                sendJson(exchange, 200, json);
+            } else if ("POST".equals(method)) {
+                String body = readRequestBody(exchange);
+                Map<String, String> data = parseSimpleJson(body);
+
+                String category = data.getOrDefault("category", "Overall");
+                double limit = 0.0;
+                try {
+                    limit = Double.parseDouble(data.getOrDefault("limit", data.getOrDefault("limitAmount", "0")));
+                } catch (NumberFormatException ignored) {}
+
+                boolean updated = financeManager.setCategoryBudget(category, limit);
+                if (updated) {
+                    sendJson(exchange, 200, financeManager.getBudgetSummaryJson());
+                } else {
+                    sendJson(exchange, 400, "{\"error\":\"Could not update budget\"}");
                 }
             } else {
                 sendJson(exchange, 405, "{\"error\":\"Method not allowed\"}");

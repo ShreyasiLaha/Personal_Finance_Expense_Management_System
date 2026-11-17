@@ -17,22 +17,28 @@ public class FinanceManager {
 
     // ------------------------------------------------------------------------
     // COLLECTIONS: ArrayList used as the in-memory data store for transactions
+    // COLLECTIONS: HashMap used to store budget limits by category
     // ------------------------------------------------------------------------
     private final ArrayList<Transaction> transactions;
+    private final HashMap<String, Double> categoryBudgets;
     private final FileManager fileManager;
 
     public FinanceManager(FileManager fileManager) {
         this.fileManager = fileManager;
         this.transactions = new ArrayList<>();
+        this.categoryBudgets = new HashMap<>();
         loadData();
     }
 
     /**
-     * Loads transactions from file into our ArrayList
+     * Loads transactions and budgets from file into our Collections
      */
     public synchronized void loadData() {
         this.transactions.clear();
         this.transactions.addAll(fileManager.loadTransactions());
+
+        this.categoryBudgets.clear();
+        this.categoryBudgets.putAll(fileManager.loadBudgets());
     }
 
     /**
@@ -295,8 +301,102 @@ public class FinanceManager {
         }
         sb.append("}");
 
+        // Budget Alerts Summary
+        sb.append(",\"budgetSummary\":").append(getBudgetSummaryJson());
+
         sb.append("}");
         return sb.toString();
+    }
+
+    /**
+     * ========================================================================
+     * BUDGET & ALERT SYSTEM METHODS (Collections & Logic)
+     * ========================================================================
+     */
+    public synchronized boolean setCategoryBudget(String category, double limit) {
+        if (category == null || category.trim().isEmpty()) return false;
+        categoryBudgets.put(category.trim(), Math.max(0.0, limit));
+        return fileManager.saveBudgets(categoryBudgets);
+    }
+
+    public synchronized HashMap<String, Double> getCategoryBudgets() {
+        return new HashMap<>(this.categoryBudgets);
+    }
+
+    public synchronized String getBudgetSummaryJson() {
+        HashMap<String, Double> expByCat = getExpenseByCategory();
+        double totalExp = getTotalExpenses();
+
+        // Standard ordered categories to display
+        String[] displayCategories = {"Overall", "Food", "Shopping", "Travel", "Education", "Bills", "Other"};
+        ArrayList<String> allCategories = new ArrayList<>();
+        for (String c : displayCategories) {
+            allCategories.add(c);
+        }
+        for (String c : categoryBudgets.keySet()) {
+            if (!allCategories.contains(c)) {
+                allCategories.add(c);
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        int count = 0;
+
+        for (String cat : allCategories) {
+            double limit = categoryBudgets.getOrDefault(cat, cat.equals("Overall") ? 900.00 : 150.00);
+            double spent = cat.equalsIgnoreCase("Overall") ? totalExp : expByCat.getOrDefault(cat, 0.0);
+            double remaining = limit - spent;
+            double pct = limit > 0 ? (spent / limit) * 100.0 : 0.0;
+
+            String status = "ON_TRACK";
+            String alertMsg = "";
+
+            if (pct >= 100.0) {
+                status = "EXCEEDED";
+                alertMsg = cat + " budget exceeded by $" + String.format(Locale.US, "%.2f", Math.abs(remaining)) + "!";
+            } else if (pct >= 80.0) {
+                status = "WARNING";
+                alertMsg = "Warning: " + String.format(Locale.US, "%.0f", pct) + "% of " + cat + " budget reached.";
+            }
+
+            if (count > 0) sb.append(",");
+            sb.append("{")
+              .append("\"category\":\"").append(escapeJson(cat)).append("\",")
+              .append("\"limit\":").append(String.format(Locale.US, "%.2f", limit)).append(",")
+              .append("\"spent\":").append(String.format(Locale.US, "%.2f", spent)).append(",")
+              .append("\"remaining\":").append(String.format(Locale.US, "%.2f", remaining)).append(",")
+              .append("\"percentage\":").append(String.format(Locale.US, "%.1f", pct)).append(",")
+              .append("\"status\":\"").append(status).append("\",")
+              .append("\"alert\":\"").append(escapeJson(alertMsg)).append("\"")
+              .append("}");
+            count++;
+        }
+
+        sb.append("]");
+        return sb.toString();
+    }
+
+    /**
+     * Checks if a new expense transaction triggers a budget alert
+     */
+    public synchronized String checkExpenseAlert(String category, double amount) {
+        if (category == null) return null;
+        double currentSpent = getExpenseByCategory().getOrDefault(category, 0.0);
+        double limit = categoryBudgets.getOrDefault(category, 0.0);
+
+        if (limit > 0) {
+            double newTotal = currentSpent + amount;
+            if (newTotal >= limit) {
+                return "🚨 Budget Alert: This puts your " + category + " expenses at $" + 
+                        String.format(Locale.US, "%.2f", newTotal) + ", exceeding your $" + 
+                        String.format(Locale.US, "%.2f", limit) + " budget!";
+            } else if ((newTotal / limit) >= 0.8) {
+                return "⚠️ Budget Warning: This expense brings your " + category + " budget to " + 
+                        String.format(Locale.US, "%.0f", (newTotal / limit) * 100) + "% of limit.";
+            }
+        }
+        return null;
     }
 
     /**

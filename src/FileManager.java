@@ -5,6 +5,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * ============================================================================
@@ -16,11 +18,18 @@ import java.util.ArrayList;
  */
 public class FileManager {
 
-    // ENCAPSULATION: Private variable for the target storage file path
+    // ENCAPSULATION: Private variable for the target storage file paths
     private final String filePath;
+    private final String budgetsFilePath;
 
     public FileManager(String filePath) {
         this.filePath = filePath;
+        this.budgetsFilePath = "budgets.txt";
+    }
+
+    public FileManager(String filePath, String budgetsFilePath) {
+        this.filePath = filePath;
+        this.budgetsFilePath = budgetsFilePath;
     }
 
     /**
@@ -155,5 +164,89 @@ public class FileManager {
         sampleList.add(new Expense("TXN-108", "Italian Restaurant Dinner", 54.50, "Food", "2026-11-13", "Weekend dinner with friends", "Cash"));
 
         saveTransactions(sampleList);
+    }
+
+    /**
+     * ========================================================================
+     * BUDGET FILE HANDLING: Reads budgets from budgets.txt
+     * ========================================================================
+     */
+    public synchronized HashMap<String, Double> loadBudgets() {
+        HashMap<String, Double> budgets = new HashMap<>();
+        File file = new File(budgetsFilePath);
+
+        if (!file.exists() || file.length() == 0) {
+            budgets = seedDefaultBudgets();
+            return budgets;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+
+                String[] parts = line.split("\\|", -1);
+                if (parts.length >= 2) {
+                    try {
+                        String cat = parts[0].trim();
+                        double limit = Double.parseDouble(parts[1].trim());
+                        budgets.put(cat, limit);
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading budgets: " + e.getMessage());
+        }
+
+        if (budgets.isEmpty()) {
+            budgets = seedDefaultBudgets();
+        }
+
+        return budgets;
+    }
+
+    /**
+     * ========================================================================
+     * BUDGET FILE HANDLING: Saves budgets to budgets.txt
+     * ========================================================================
+     */
+    public synchronized boolean saveBudgets(HashMap<String, Double> budgets) {
+        File file = new File(budgetsFilePath);
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
+            writer.write("# Category Budgets File");
+            writer.newLine();
+            writer.write("# Format: CATEGORY|LIMIT_AMOUNT");
+            writer.newLine();
+
+            for (Map.Entry<String, Double> entry : budgets.entrySet()) {
+                writer.write(entry.getKey() + "|" + String.format(java.util.Locale.US, "%.2f", entry.getValue()));
+                writer.newLine();
+            }
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error writing budgets: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Seeds initial sensible monthly budgets for all core categories
+     */
+    public synchronized HashMap<String, Double> seedDefaultBudgets() {
+        HashMap<String, Double> defaults = new HashMap<>();
+        defaults.put("Overall", 900.00);
+        defaults.put("Food", 250.00);
+        defaults.put("Shopping", 150.00);
+        defaults.put("Travel", 80.00);
+        defaults.put("Education", 100.00);
+        defaults.put("Bills", 180.00);
+        defaults.put("Other", 100.00);
+
+        saveBudgets(defaults);
+        return defaults;
     }
 }

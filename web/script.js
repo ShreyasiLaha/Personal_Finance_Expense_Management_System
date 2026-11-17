@@ -100,6 +100,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const categoryLegendContainer = document.getElementById("categoryLegendContainer");
     const monthlyTrendChart = document.getElementById("monthlyTrendChart");
 
+    // Budget Alert System DOM References
+    const sidebarAlertBadge = document.getElementById("sidebarAlertBadge");
+    const dashboardAlertBanner = document.getElementById("dashboardAlertBanner");
+    const alertBannerTitle = document.getElementById("alertBannerTitle");
+    const alertBannerMessage = document.getElementById("alertBannerMessage");
+    const bannerManageBudgetsBtn = document.getElementById("bannerManageBudgetsBtn");
+    const setBudgetForm = document.getElementById("setBudgetForm");
+    const budgetCategorySelect = document.getElementById("budgetCategorySelect");
+    const budgetLimitInput = document.getElementById("budgetLimitInput");
+    const budgetCardsGrid = document.getElementById("budgetCardsGrid");
+
     // Default Date to today
     formDate.value = new Date().toISOString().split("T")[0];
 
@@ -175,6 +186,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 pageHeading.textContent = "Monthly & Category Summary";
                 pageSubheading.textContent = "Detailed breakdown of monthly spending and category analysis.";
                 break;
+            case "section-budgets":
+                pageHeading.textContent = "Budget Alert & Control Center";
+                pageSubheading.textContent = "Set category spending limits and monitor automated budget alerts.";
+                break;
         }
 
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -190,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     quickAddBtn.addEventListener("click", () => navigateToSection("section-add"));
     viewAllBtn.addEventListener("click", () => navigateToSection("section-history"));
+    if (bannerManageBudgetsBtn) bannerManageBudgetsBtn.addEventListener("click", () => navigateToSection("section-budgets"));
 
     // ------------------------------------------------------------------------
     // SCREEN SWITCHING (Full Landing Screen <-> App Screen)
@@ -251,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function showToast(message, type = "success") {
         const container = document.getElementById("toastContainer");
         const toast = document.createElement("div");
-        toast.className = `toast ${type === 'error' ? 'toast-error' : ''}`;
+        toast.className = `toast ${type === 'error' ? 'toast-error' : (type === 'warning' ? 'toast-warning' : '')}`;
         toast.textContent = message;
         container.appendChild(toast);
 
@@ -260,7 +276,7 @@ document.addEventListener("DOMContentLoaded", () => {
             toast.style.transform = "translateY(10px)";
             toast.style.transition = "all 0.3s";
             setTimeout(() => toast.remove(), 300);
-        }, 3200);
+        }, 3600);
     }
 
     // Currency Formatter
@@ -312,6 +328,9 @@ document.addEventListener("DOMContentLoaded", () => {
             // Render Tables in Section 4
             renderMonthlySummaryTable(data.monthlyExpenseSummary || {});
             renderCategorySummaryTable(data.expenseByCategory || {}, data.totalExpense || 0);
+
+            // Render Budget Alerts in Section 5 & Dashboard Alert Banner
+            renderBudgetCards(data.budgetSummary || []);
 
         } catch (err) {
             console.error("Summary error:", err);
@@ -522,6 +541,127 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ------------------------------------------------------------------------
+    // BUDGET ALERT SYSTEM: Render Cards, Badges & Dashboard Alert Banner
+    // ------------------------------------------------------------------------
+    function renderBudgetCards(budgets) {
+        if (!budgetCardsGrid) return;
+        budgetCardsGrid.innerHTML = "";
+
+        if (!budgets || budgets.length === 0) {
+            budgetCardsGrid.innerHTML = `<div class="empty-state"><p>No budget limits configured.</p></div>`;
+            if (sidebarAlertBadge) sidebarAlertBadge.classList.add("hidden");
+            if (dashboardAlertBanner) dashboardAlertBanner.classList.add("hidden");
+            return;
+        }
+
+        // Identify active alert categories (WARNING >= 80% or EXCEEDED >= 100%)
+        const alertItems = budgets.filter(b => b.status === "EXCEEDED" || b.status === "WARNING");
+
+        // Update Sidebar Alert Badge
+        if (sidebarAlertBadge) {
+            if (alertItems.length > 0) {
+                sidebarAlertBadge.textContent = alertItems.length;
+                sidebarAlertBadge.classList.remove("hidden");
+            } else {
+                sidebarAlertBadge.classList.add("hidden");
+            }
+        }
+
+        // Update Dashboard Alert Banner
+        if (dashboardAlertBanner) {
+            if (alertItems.length > 0) {
+                dashboardAlertBanner.classList.remove("hidden");
+                const hasExceeded = alertItems.some(b => b.status === "EXCEEDED");
+                const bannerIcon = dashboardAlertBanner.querySelector(".alert-banner-icon");
+
+                if (hasExceeded) {
+                    dashboardAlertBanner.classList.remove("banner-warning");
+                    dashboardAlertBanner.classList.add("banner-danger");
+                    if (bannerIcon) bannerIcon.textContent = "🚨";
+                    if (alertBannerTitle) alertBannerTitle.textContent = "Budget Limits Exceeded!";
+                    const exceededCats = alertItems
+                        .filter(b => b.status === "EXCEEDED")
+                        .map(b => b.category)
+                        .join(", ");
+                    if (alertBannerMessage) {
+                        alertBannerMessage.textContent = `Immediate attention needed: Spending limit exceeded for ${exceededCats}.`;
+                    }
+                } else {
+                    dashboardAlertBanner.classList.remove("banner-danger");
+                    dashboardAlertBanner.classList.add("banner-warning");
+                    if (bannerIcon) bannerIcon.textContent = "⚠️";
+                    if (alertBannerTitle) alertBannerTitle.textContent = "Budget Warning Threshold Reached";
+                    const warningCats = alertItems.map(b => b.category).join(", ");
+                    if (alertBannerMessage) {
+                        alertBannerMessage.textContent = `Caution: Spending is at 80% or more of budget for ${warningCats}.`;
+                    }
+                }
+            } else {
+                dashboardAlertBanner.classList.add("hidden");
+            }
+        }
+
+        // Render each budget card
+        budgets.forEach(b => {
+            const pct = b.percentage || 0;
+            const barWidth = Math.min(100, Math.max(0, pct));
+
+            let fillClass = "fill-green";
+            let badgeClass = "badge-on-track";
+            let badgeLabel = "On Track";
+
+            if (b.status === "EXCEEDED" || pct >= 100) {
+                fillClass = "fill-red";
+                badgeClass = "badge-exceeded";
+                badgeLabel = "Exceeded";
+            } else if (b.status === "WARNING" || pct >= 80) {
+                fillClass = "fill-amber";
+                badgeClass = "badge-warning";
+                badgeLabel = "Warning";
+            }
+
+            const card = document.createElement("div");
+            card.className = "budget-card";
+
+            card.innerHTML = `
+                <div class="budget-card-header">
+                    <span class="budget-card-title">${escapeHtml(b.category)}</span>
+                    <span class="budget-status-badge ${badgeClass}">${badgeLabel}</span>
+                </div>
+                <div class="budget-amounts">
+                    <span class="budget-spent-val">${formatMoney(b.spent)}</span>
+                    <span class="budget-limit-val">of ${formatMoney(b.limit)} (${pct.toFixed(0)}%)</span>
+                </div>
+                <div class="budget-bar-track">
+                    <div class="budget-bar-fill ${fillClass}" style="width: ${barWidth}%;"></div>
+                </div>
+                <div class="budget-footer">
+                    <span>${b.remaining >= 0 ? `${formatMoney(b.remaining)} remaining` : `${formatMoney(Math.abs(b.remaining))} over limit!`}</span>
+                    <button type="button" class="btn-quick-adjust" data-category="${escapeHtml(b.category)}" data-limit="${b.limit}">
+                        Adjust Limit
+                    </button>
+                </div>
+            `;
+
+            const adjustBtn = card.querySelector(".btn-quick-adjust");
+            if (adjustBtn) {
+                adjustBtn.addEventListener("click", () => {
+                    if (budgetCategorySelect) budgetCategorySelect.value = b.category;
+                    if (budgetLimitInput) {
+                        budgetLimitInput.value = Math.round(b.limit);
+                        budgetLimitInput.focus();
+                    }
+                    if (setBudgetForm) {
+                        setBudgetForm.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }
+                });
+            }
+
+            budgetCardsGrid.appendChild(card);
+        });
+    }
+
+    // ------------------------------------------------------------------------
     // CHARTS: Custom Canvas Donut Chart (Category Breakdown)
     // ------------------------------------------------------------------------
     function renderCategoryDonut(categoryData) {
@@ -723,6 +863,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!res.ok) throw new Error("Failed to save transaction");
+            const resData = await res.json();
 
             // Reset form and edit state
             addTransactionForm.reset();
@@ -735,6 +876,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             showToast(editId ? `Updated "${title}" successfully!` : `Recorded ${type.toLowerCase()}: "${title}" ($${amount.toFixed(2)})`, "success");
 
+            // Real-time Budget Alert notification if spending threshold is breached
+            if (resData && resData.budgetAlert) {
+                setTimeout(() => {
+                    const isExceeded = resData.budgetAlert.includes("exceeding") || resData.budgetAlert.includes("🚨");
+                    showToast(resData.budgetAlert, isExceeded ? "error" : "warning");
+                }, 600);
+            }
+
             await loadTransactions();
             await loadSummary();
 
@@ -746,6 +895,43 @@ document.addEventListener("DOMContentLoaded", () => {
             showToast("Error saving transaction: " + err.message, "error");
         }
     });
+
+    // ------------------------------------------------------------------------
+    // FORM: Set / Update Category Budget Limit
+    // ------------------------------------------------------------------------
+    if (setBudgetForm) {
+        setBudgetForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const category = budgetCategorySelect.value;
+            const limit = parseFloat(budgetLimitInput.value);
+
+            if (isNaN(limit) || limit <= 0) {
+                showToast("Please enter a valid positive budget limit.", "error");
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/budgets", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ category, limit: limit.toString() })
+                });
+
+                if (!res.ok) throw new Error("Could not update budget limit");
+
+                const updatedBudgets = await res.json();
+                renderBudgetCards(updatedBudgets);
+                showToast(`Budget limit for ${category} updated to $${limit.toFixed(2)}`, "success");
+                budgetLimitInput.value = "";
+                await loadSummary();
+
+            } catch (err) {
+                console.error(err);
+                showToast("Error updating budget: " + err.message, "error");
+            }
+        });
+    }
 
     // Reset edit state when clear button is clicked
     const formCancelEditBtn = document.getElementById("formCancelEditBtn");

@@ -947,6 +947,10 @@ body {
     border-left-color: var(--color-expense);
 }
 
+.toast-warning {
+    border-left-color: #f59e0b;
+}
+
 @keyframes slideUp {
     from {
         opacity: 0;
@@ -1442,6 +1446,309 @@ body {
     border-radius: 4px;
     font-family: monospace;
     font-size: 0.8rem;
+}
+
+/* ==========================================================================
+   BUDGET ALERT SYSTEM STYLES
+   ========================================================================== */
+
+/* Sidebar Alert Badge */
+.sidebar-alert-badge {
+    margin-left: auto;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: var(--radius-full);
+    line-height: 1.2;
+    animation: alertPulse 1.8s infinite;
+}
+
+@keyframes alertPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+}
+
+/* Active Dashboard Alert Banner */
+.budget-alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(135deg, rgba(254, 242, 242, 0.95), rgba(254, 226, 226, 0.8));
+    border: 1px solid #fca5a5;
+    border-left: 5px solid #ef4444;
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.08);
+    animation: slideDown 0.3s ease-out;
+}
+
+[data-theme="dark"] .budget-alert-banner {
+    background: linear-gradient(135deg, rgba(69, 10, 10, 0.6), rgba(127, 29, 29, 0.4));
+    border-color: #7f1d1d;
+    border-left-color: #ef4444;
+}
+
+.budget-alert-banner.banner-warning {
+    background: linear-gradient(135deg, rgba(254, 252, 232, 0.95), rgba(254, 240, 138, 0.6));
+    border-color: #fde047;
+    border-left-color: #eab308;
+}
+
+[data-theme="dark"] .budget-alert-banner.banner-warning {
+    background: linear-gradient(135deg, rgba(66, 32, 6, 0.6), rgba(113, 63, 18, 0.4));
+    border-color: #854d0e;
+    border-left-color: #eab308;
+}
+
+.alert-banner-icon {
+    font-size: 1.7rem;
+    flex-shrink: 0;
+}
+
+.alert-banner-text {
+    flex: 1;
+}
+
+.alert-banner-text h4 {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: #991b1b;
+    margin-bottom: 2px;
+}
+
+[data-theme="dark"] .alert-banner-text h4 {
+    color: #fca5a5;
+}
+
+.banner-warning .alert-banner-text h4 {
+    color: #854d0e;
+}
+
+[data-theme="dark"] .banner-warning .alert-banner-text h4 {
+    color: #fef08a;
+}
+
+.alert-banner-text p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.btn-alert-action {
+    flex-shrink: 0;
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+/* Inline Budget Setting Form */
+.budget-form-wrap {
+    background: var(--primary-bg);
+    border: 1px solid var(--primary-border);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+}
+
+.budget-inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.inline-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.inline-group-btn {
+    flex-shrink: 0;
+}
+
+/* Budget Legend Bar */
+.budget-legend-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding: 10px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+}
+
+.legend-pill {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+}
+
+.pill-on-track {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+}
+
+.pill-warning {
+    background: rgba(234, 179, 8, 0.15);
+    color: #b45309;
+}
+
+.pill-danger {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+
+/* Budget Cards Grid */
+.budget-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.budget-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+}
+
+.budget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.budget-card.status-danger {
+    border-color: #fca5a5;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(254, 242, 242, 0.4) 100%);
+}
+
+[data-theme="dark"] .budget-card.status-danger {
+    border-color: #7f1d1d;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(69, 10, 10, 0.25) 100%);
+}
+
+.budget-card.status-warning {
+    border-color: #fde047;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(254, 252, 232, 0.4) 100%);
+}
+
+[data-theme="dark"] .budget-card.status-warning {
+    border-color: #854d0e;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(66, 32, 6, 0.25) 100%);
+}
+
+.budget-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.budget-category-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.budget-badge {
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.badge-on-track {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}
+
+.badge-warning {
+    background: rgba(234, 179, 8, 0.2);
+    color: #b45309;
+}
+
+.badge-exceeded {
+    background: rgba(239, 68, 68, 0.2);
+    color: #dc2626;
+    animation: alertPulse 1.8s infinite;
+}
+
+.budget-amounts {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.budget-spent-val {
+    font-size: 1.45rem;
+    font-weight: 800;
+}
+
+.budget-limit-val {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Progress Bar */
+.budget-bar-track {
+    width: 100%;
+    height: 9px;
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.budget-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fill-green {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.fill-amber {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.fill-red {
+    background: linear-gradient(90deg, #f43f5e, #e11d48);
+}
+
+.budget-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.btn-quick-adjust {
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.78rem;
+}
+
+.btn-quick-adjust:hover {
+    text-decoration: underline;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Responsive Breakpoints */

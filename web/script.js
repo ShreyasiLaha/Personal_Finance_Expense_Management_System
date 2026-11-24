@@ -551,8 +551,8 @@ document.addEventListener("DOMContentLoaded", () => {
         // Update Topbar Title
         switch (targetSectionId) {
             case "section-landing":
-                pageHeading.textContent = "FinancePulse ♡";
-                pageSubheading.textContent = "Your aesthetic lifestyle personal budgeting space ✨";
+                pageHeading.textContent = "Personal Finance System";
+                pageSubheading.textContent = "Your aesthetic Personal Finance & Expense Management System ✨";
                 break;
             case "section-dashboard":
                 pageHeading.textContent = "Hello, Sunshine! ♡";

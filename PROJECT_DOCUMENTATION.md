@@ -5,7 +5,7 @@
 ## 1. Executive Summary & Context
 
 ### What is this project?
-The **Personal Finance & Expense Management System** (branded as **FinancePulse ♡**) is a lightweight, framework-free personal budgeting and financial health application. It combines an **aesthetic, Pinterest-inspired pastel lifestyle budgeting UI** with a robust **pure Java backend** implementing core Computer Science and Object-Oriented Programming (OOP) fundamentals.
+The **Personal Finance & Expense Management System** is a lightweight, framework-free personal budgeting and financial health application. It combines an **aesthetic, Pinterest-inspired pastel lifestyle budgeting UI** with a robust **pure Java backend** implementing core Computer Science and Object-Oriented Programming (OOP) fundamentals.
 
 ### Primary Motivations & Objectives:
 1. **Academic & Viva-Ready Core Java Demonstration**:
@@ -216,3 +216,4 @@ flowchart TD
 | **How is data persisted?** | Data is read and written to delimited flat files (`transactions.txt`, `budgets.txt`, `goals.txt`) using Java's `BufferedReader` and `BufferedWriter`. |
 | **How does the budget alert work?** | When spending in any category reaches $\ge 80\%$ of its limit, status is marked `WARNING`; at $\ge 100\%$, status becomes `DANGER`, triggering visual alert banners. |
 | **How can this be hosted on Vercel or GitHub Pages without Java?** | The frontend includes an intelligent client-side storage adapter in `script.js` that mirrors all Java calculations and persists state via browser `localStorage` when deployed on serverless cloud platforms. |
+

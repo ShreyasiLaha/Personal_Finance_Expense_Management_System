@@ -53,6 +53,14 @@ public class Main {
      * Starts the built-in Java HTTP Server
      */
     public void startServer() {
+        // Read port from environment variable if provided (e.g. Render, Railway, cloud containers)
+        String envPort = System.getenv("PORT");
+        if (envPort != null && !envPort.trim().isEmpty()) {
+            try {
+                PORT = Integer.parseInt(envPort.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+
         HttpServer server = null;
         int[] candidatePorts = {PORT, 8081, 8082, 8000, 9000};
         

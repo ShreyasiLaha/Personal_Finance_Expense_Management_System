@@ -13,13 +13,10 @@
     const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     let backendActive = isLocalhost;
 
-    if (isLocalhost) {
-        fetch("/api/summary", { method: "GET", cache: "no-store" })
-            .then(res => { backendActive = res.ok; })
-            .catch(() => { backendActive = false; });
-    } else {
-        backendActive = false; // Always use high-performance client storage on Vercel / GitHub Pages
-    }
+    // Probe the backend API; if available (localhost or live Java server e.g. on Render), use it
+    fetch("/api/summary", { method: "GET", cache: "no-store" })
+        .then(res => { if (res.ok) backendActive = true; })
+        .catch(() => { if (!isLocalhost) backendActive = false; });
 
     const originalFetch = window.fetch.bind(window);
 

@@ -400,11 +400,11 @@ public class FinanceManager {
         if (limit > 0) {
             double newTotal = currentSpent + amount;
             if (newTotal >= limit) {
-                return "🚨 Budget Alert: This puts your " + category + " expenses at $" + 
+                return "\uD83D\uDEA8 Budget Alert: This puts your " + category + " expenses at $" + 
                         String.format(Locale.US, "%.2f", newTotal) + ", exceeding your $" + 
                         String.format(Locale.US, "%.2f", limit) + " budget!";
             } else if ((newTotal / limit) >= 0.8) {
-                return "⚠️ Budget Warning: This expense brings your " + category + " budget to " + 
+                return "\u26A0\uFE0F Budget Warning: This expense brings your " + category + " budget to " + 
                         String.format(Locale.US, "%.0f", (newTotal / limit) * 100) + "% of limit.";
             }
         }

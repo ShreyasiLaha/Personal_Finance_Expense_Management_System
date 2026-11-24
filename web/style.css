@@ -2798,3 +2798,258 @@ h1, h2, h3, h4, h5, h6,
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   AESTHETIC PRELOADER / LOADING SCREEN
+   ========================================================================== */
+
+.app-preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: linear-gradient(135deg, #fdf2f8 0%, #faf7f5 45%, #f5f3ff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.65s;
+    visibility: visible;
+    opacity: 1;
+}
+
+[data-theme="dark"] .app-preloader {
+    background: linear-gradient(135deg, #1c1524 0%, #130f18 50%, #201328 100%);
+}
+
+.app-preloader.preloader-fadeout {
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(1.05);
+    pointer-events: none;
+}
+
+/* Floating Backdrop Blur Orbs */
+.preloader-backdrop-bubbles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.preloader-backdrop-bubbles .bubble {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(55px);
+    opacity: 0.55;
+    animation: floatOrb 8s infinite alternate ease-in-out;
+}
+
+.bubble-1 {
+    width: 280px;
+    height: 280px;
+    background: #fbcfe8;
+    top: -40px;
+    left: -40px;
+}
+
+.bubble-2 {
+    width: 320px;
+    height: 320px;
+    background: #e9d5ff;
+    bottom: -60px;
+    right: -50px;
+    animation-delay: -3s;
+}
+
+.bubble-3 {
+    width: 220px;
+    height: 220px;
+    background: #fed7aa;
+    top: 50%;
+    right: 15%;
+    animation-delay: -5s;
+}
+
+.bubble-4 {
+    width: 180px;
+    height: 180px;
+    background: #a7f3d0;
+    bottom: 20%;
+    left: 10%;
+    animation-delay: -2s;
+}
+
+@keyframes floatOrb {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(30px, 40px) scale(1.15); }
+}
+
+/* Preloader Central Card */
+.preloader-card {
+    position: relative;
+    z-index: 10;
+    width: 90%;
+    max-width: 440px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1.5px solid rgba(244, 114, 182, 0.3);
+    border-radius: 28px;
+    padding: 44px 34px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(236, 72, 153, 0.12), 0 4px 16px rgba(168, 85, 247, 0.08);
+    backdrop-filter: blur(16px);
+    animation: cardFloatIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-theme="dark"] .preloader-card {
+    background: rgba(29, 22, 36, 0.9);
+    border-color: rgba(244, 114, 182, 0.2);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes cardFloatIn {
+    0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Pulsing Center Icon */
+.preloader-icon-wrap {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 20px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preloader-pulse-ring,
+.preloader-pulse-ring-outer {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px dashed rgba(236, 72, 153, 0.4);
+    animation: ringRotatePulse 6s infinite linear;
+}
+
+.preloader-pulse-ring-outer {
+    inset: -12px;
+    border: 1.5px dotted rgba(192, 132, 252, 0.35);
+    animation: ringRotatePulseReverse 9s infinite linear;
+}
+
+@keyframes ringRotatePulse {
+    0% { transform: rotate(0deg) scale(0.96); }
+    50% { transform: rotate(180deg) scale(1.04); }
+    100% { transform: rotate(360deg) scale(0.96); }
+}
+
+@keyframes ringRotatePulseReverse {
+    0% { transform: rotate(360deg) scale(1.02); }
+    50% { transform: rotate(180deg) scale(0.96); }
+    100% { transform: rotate(0deg) scale(1.02); }
+}
+
+.preloader-icon-core {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #c084fc 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.35);
+    z-index: 2;
+}
+
+.preloader-emoji {
+    font-size: 2.1rem;
+    animation: emojiPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes emojiPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15) rotate(6deg); }
+}
+
+/* Text Hierarchy */
+.preloader-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+    margin-bottom: 2px;
+}
+
+.preloader-subtitle {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+}
+
+.preloader-phrase {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    min-height: 24px;
+    font-weight: 600;
+    transition: opacity 0.25s ease;
+}
+
+/* Animated Progress Bar */
+.preloader-bar-wrap {
+    width: 100%;
+    height: 10px;
+    background: rgba(244, 114, 182, 0.16);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin: 24px 0 10px 0;
+    position: relative;
+}
+
+.preloader-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #f472b6, #c084fc, #fb923c);
+    border-radius: var(--radius-full);
+    transition: width 0.12s linear;
+    position: relative;
+}
+
+.preloader-bar-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    animation: barShimmer 1.4s infinite;
+}
+
+@keyframes barShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Counter & Sparkles */
+.preloader-counter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-family: var(--font-heading);
+}
+
+.preloader-sparkle {
+    color: var(--primary);
+    letter-spacing: 0.1em;
+    animation: sparkleGlow 1.8s infinite ease-in-out;
+}
+
+@keyframes sparkleGlow {
+    0%, 100% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.18); }
+}

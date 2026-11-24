@@ -2000,6 +2000,55 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // ------------------------------------------------------------------------
+    // PRELOADER / LOADING SCREEN ANIMATION
+    // ------------------------------------------------------------------------
+    const appPreloader = document.getElementById("appPreloader");
+    const preloaderFill = document.getElementById("preloaderFill");
+    const preloaderPercent = document.getElementById("preloaderPercent");
+    const preloaderMessage = document.getElementById("preloaderMessage");
+    const preloaderEmoji = document.querySelector(".preloader-emoji");
+
+    const loadingPhrases = [
+        { pct: 25, text: "Tidying up your expense records... 🌸", emoji: "🌸" },
+        { pct: 55, text: "Calculating your balance & budgets... ✨", emoji: "✨" },
+        { pct: 85, text: "Aligning your savings milestones... ♡", emoji: "🎀" },
+        { pct: 100, text: "Welcome! Your financial space is ready 🌸", emoji: "💖" }
+    ];
+
+    function runPreloaderAnimation() {
+        if (!appPreloader) return;
+        let step = 0;
+        let progress = 0;
+
+        const interval = setInterval(() => {
+            progress += 3;
+            if (progress > 100) progress = 100;
+
+            if (preloaderFill) preloaderFill.style.width = progress + "%";
+            if (preloaderPercent) preloaderPercent.textContent = progress + "%";
+
+            if (step < loadingPhrases.length && progress >= loadingPhrases[step].pct) {
+                if (preloaderMessage) preloaderMessage.textContent = loadingPhrases[step].text;
+                if (preloaderEmoji) preloaderEmoji.textContent = loadingPhrases[step].emoji;
+                step++;
+            }
+
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    appPreloader.classList.add("preloader-fadeout");
+                    setTimeout(() => {
+                        appPreloader.style.display = "none";
+                    }, 650);
+                }, 350);
+            }
+        }, 30);
+    }
+
+    // Start preloader animation immediately on boot
+    runPreloaderAnimation();
+
     // Initial Load
     loadTransactions();
     loadSummary();

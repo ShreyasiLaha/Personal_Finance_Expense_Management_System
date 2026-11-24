@@ -15,6 +15,44 @@
 <body>
 
     <!-- ============================================================= -->
+    <!-- 0. AESTHETIC LOADING SCREEN WITH ANIMATION                     -->
+    <!-- ============================================================= -->
+    <div id="appPreloader" class="app-preloader">
+        <div class="preloader-backdrop-bubbles">
+            <div class="bubble bubble-1"></div>
+            <div class="bubble bubble-2"></div>
+            <div class="bubble bubble-3"></div>
+            <div class="bubble bubble-4"></div>
+        </div>
+
+        <div class="preloader-card">
+            <div class="preloader-icon-wrap">
+                <div class="preloader-pulse-ring"></div>
+                <div class="preloader-pulse-ring-outer"></div>
+                <div class="preloader-icon-core">
+                    <span class="preloader-emoji">🌸</span>
+                </div>
+            </div>
+
+            <div class="preloader-text-group">
+                <h2 class="preloader-title">Personal Finance</h2>
+                <span class="preloader-subtitle">Expense Management System</span>
+                <p id="preloaderMessage" class="preloader-phrase">Preparing your mindful budget space... ✨</p>
+            </div>
+
+            <!-- Animated Progress Bar -->
+            <div class="preloader-bar-wrap">
+                <div class="preloader-bar-fill" id="preloaderFill"></div>
+            </div>
+
+            <div class="preloader-counter">
+                <span id="preloaderPercent">0%</span>
+                <span class="preloader-sparkle">♡ ✨ ♡</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================= -->
     <!-- 1. FULL-PAGE LANDING / WELCOME SCREEN                         -->
     <!-- ============================================================= -->
     <div id="landingScreen" class="full-landing-screen">
